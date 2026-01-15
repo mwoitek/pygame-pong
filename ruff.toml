@@ -1,0 +1,27 @@
+line-length = 100
+target-version = "py313"
+unsafe-fixes = false
+
+[lint]
+select = ["ALL"]
+ignore = [
+  "B018",
+  "C90",
+  "COM812",
+  "D",
+  "DTZ",
+  "ERA",
+  "FBT",
+  "FIX",
+  "INP001",
+  "PLR0912",
+  "PLR2004",
+  "S101",
+  "S603",
+  "T20",
+  "TD"
+]
+unfixable = ["F401"]
+
+[lint.isort]
+case-sensitive = true

@@ -1,0 +1,10 @@
+{
+  "analyzeUnannotatedFunctions": false,
+  "reportUnnecessaryCast": "information",
+  "reportUnnecessaryTypeIgnoreComment": "information",
+  "reportUnusedExpression": true,
+  "reportUnusedImport": "information",
+  "reportUnusedVariable": "information",
+  "typeCheckingMode": "basic",
+  "useLibraryCodeForTypes": true
+}
