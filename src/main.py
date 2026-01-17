@@ -17,11 +17,11 @@ class Arena:
         self.border_width = border_width
         self.gap_length = gap_length
         self.border_color = border_color
-        self.rendered = False
         self.vertical_surf = self._get_vertical_surface()
         self.horizontal_surf = self._get_horizontal_surface()
         self.vertical_rects = self._get_vertical_rectangles()
         self.horizontal_rects = self._get_horizontal_rectangles()
+        self.surf = self._get_surface()
 
     def _get_vertical_surface(self) -> pg.Surface:
         width = self.border_width
@@ -55,16 +55,16 @@ class Arena:
         ]
         return [self.horizontal_surf.get_rect(topleft=topleft) for topleft in positions]
 
-    def render(self, screen: pg.Surface) -> None:
-        if self.rendered:
-            return
+    def _get_surface(self) -> pg.Surface:
+        surf = pg.Surface((WINDOW_WIDTH, WINDOW_HEIGHT))
         for rect in self.vertical_rects:
-            screen.blit(self.vertical_surf, rect)
-            pg.display.update(rect)
+            surf.blit(self.vertical_surf, rect)
         for rect in self.horizontal_rects:
-            screen.blit(self.horizontal_surf, rect)
-            pg.display.update(rect)
-        self.rendered = True
+            surf.blit(self.horizontal_surf, rect)
+        return surf
+
+    def render(self, screen: pg.Surface) -> None:
+        screen.blit(self.surf)
 
 
 class Divider:
@@ -117,13 +117,6 @@ arena = Arena(
 )
 divider = Divider(square_side=4, color=DARK_BLUE)
 
-main_rect = pg.Rect(
-    ARENA_BORDER_WIDTH,
-    ARENA_BORDER_WIDTH,
-    WINDOW_WIDTH - 2 * ARENA_BORDER_WIDTH,
-    WINDOW_HEIGHT - 2 * ARENA_BORDER_WIDTH,
-)
-
 is_running = True
 while is_running:
     for event in pg.event.get():
@@ -133,9 +126,9 @@ while is_running:
             case _:
                 pass
     # update
+    screen.fill("black")
     arena.render(screen)
-    screen.fill("black", main_rect)
     divider.render(screen)
-    pg.display.update(main_rect)
+    pg.display.flip()
 
 pg.quit()
