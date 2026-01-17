@@ -67,14 +67,61 @@ class Arena:
         self.rendered = True
 
 
+class Divider:
+    def __init__(
+        self,
+        square_side: int,
+        gap_length: int | None = None,
+        color: pg.typing.ColorLike = "white",
+    ) -> None:
+        self.square_side = square_side
+        self.gap_length = gap_length if gap_length is not None else square_side
+        self.color = color
+        self.rects = self._get_rectangles()
+        self.surf = self._get_surface()
+
+    def _get_rectangles(self) -> list[pg.Rect]:
+        rects: list[pg.Rect] = []
+        delta_y = self.gap_length + self.square_side
+        num_rects = (WINDOW_HEIGHT - 2 * ARENA_BORDER_WIDTH + self.gap_length) // delta_y
+        for i in range(num_rects):
+            rect = pg.Rect(0, i * delta_y, self.square_side, self.square_side)
+            rects.append(rect)
+        return rects
+
+    def _get_surface(self) -> pg.Surface:
+        square = pg.Surface((self.square_side, self.square_side))
+        square.fill(self.color)
+        last_rect = self.rects[-1]
+        surf = pg.Surface((self.square_side, last_rect.y + last_rect.height))
+        for rect in self.rects:
+            surf.blit(square, rect)
+        return surf
+
+    def render(self, screen: pg.Surface) -> None:
+        screen.blit(
+            self.surf,
+            ((WINDOW_WIDTH - self.square_side) // 2, ARENA_BORDER_WIDTH),
+        )
+
+
 pg.init()
 
 screen = pg.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
 pg.display.set_caption("Pong")
+
 arena = Arena(
     border_width=ARENA_BORDER_WIDTH,
     gap_length=12 * 30,
     border_color=DARK_BLUE,
+)
+divider = Divider(square_side=4, color=DARK_BLUE)
+
+main_rect = pg.Rect(
+    ARENA_BORDER_WIDTH,
+    ARENA_BORDER_WIDTH,
+    WINDOW_WIDTH - 2 * ARENA_BORDER_WIDTH,
+    WINDOW_HEIGHT - 2 * ARENA_BORDER_WIDTH,
 )
 
 is_running = True
@@ -87,5 +134,8 @@ while is_running:
                 pass
     # update
     arena.render(screen)
+    screen.fill("black", main_rect)
+    divider.render(screen)
+    pg.display.update(main_rect)
 
 pg.quit()
