@@ -1,3 +1,5 @@
+from enum import IntEnum
+
 import pygame as pg
 
 WINDOW_WIDTH = 12 * 67
@@ -105,6 +107,48 @@ class Divider:
         )
 
 
+class Action(IntEnum):
+    MOVE_DOWN = 0
+    MOVE_UP = 1
+
+
+class ActionBuffer:
+    def __init__(self) -> None:
+        self.values = [False for _ in range(len(Action))]
+
+    def __getitem__(self, action: Action) -> bool:
+        return self.values[action.value]
+
+    def __setitem__(self, action: Action, value: bool) -> None:
+        self.values[action.value] = value
+
+
+class Paddle:
+    def __init__(
+        self,
+        x: float,
+        y: float,
+        width: float,
+        height: float,
+        velocity: float,
+    ) -> None:
+        self.rect = pg.FRect(x, y, width, height)
+        self.velocity = velocity
+        self.max_y = WINDOW_HEIGHT - ARENA_BORDER_WIDTH - height
+
+    def update(self, action_buffer: ActionBuffer, dt: float) -> None:
+        y = self.rect.y
+        if action_buffer[Action.MOVE_DOWN]:
+            y += self.velocity * dt
+            y = min(y, self.max_y)
+            action_buffer[Action.MOVE_DOWN] = False
+        if action_buffer[Action.MOVE_UP]:
+            y -= self.velocity * dt
+            y = max(y, ARENA_BORDER_WIDTH)
+            action_buffer[Action.MOVE_UP] = False
+        self.rect.y = y
+
+
 pg.init()
 
 screen = pg.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
@@ -116,6 +160,7 @@ arena = Arena(
     border_color=DARK_BLUE,
 )
 divider = Divider(square_side=4, color=DARK_BLUE)
+action_buffers = [ActionBuffer(), ActionBuffer()]
 
 is_running = True
 while is_running:
