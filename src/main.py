@@ -4,9 +4,16 @@ import pygame as pg
 
 WINDOW_WIDTH = 12 * 67
 WINDOW_HEIGHT = 12 * 51
-ARENA_BORDER_WIDTH = 12
 
+ARENA_BORDER_WIDTH = 12
+PADDLE_WIDTH = 8
+PADDLE_HEIGHT = 12 * 10
+PADDLE_OFFSET = 4
+PADDLE_VELOCITY = 0.5  # TODO: adjust this value
+
+CYAN = pg.Color(91, 200, 175)
 DARK_BLUE = pg.Color(32, 32, 96)
+FUCHSIA = pg.Color(176, 48, 176)
 
 
 class Arena:
@@ -128,13 +135,21 @@ class Paddle:
         self,
         x: float,
         y: float,
-        width: float,
-        height: float,
-        velocity: float,
+        width: float = PADDLE_WIDTH,
+        height: float = PADDLE_HEIGHT,
+        velocity: float = PADDLE_VELOCITY,
+        color: pg.typing.ColorLike = "white",
     ) -> None:
         self.rect = pg.FRect(x, y, width, height)
         self.velocity = velocity
+        self.color = color
         self.max_y = WINDOW_HEIGHT - ARENA_BORDER_WIDTH - height
+        self.surf = self._get_surface()
+
+    def _get_surface(self) -> pg.Surface:
+        surf = pg.Surface(self.rect.size)
+        surf.fill(self.color)
+        return surf
 
     def update(self, action_buffer: ActionBuffer, dt: float) -> None:
         y = self.rect.y
@@ -148,6 +163,9 @@ class Paddle:
             action_buffer[Action.MOVE_UP] = False
         self.rect.y = y
 
+    def render(self, screen: pg.Surface) -> None:
+        screen.blit(self.surf, self.rect)
+
 
 pg.init()
 
@@ -160,6 +178,16 @@ arena = Arena(
     border_color=DARK_BLUE,
 )
 divider = Divider(square_side=4, color=DARK_BLUE)
+paddle_left = Paddle(
+    x=ARENA_BORDER_WIDTH + PADDLE_OFFSET,
+    y=(WINDOW_HEIGHT - PADDLE_HEIGHT) // 2,
+    color=CYAN,
+)
+paddle_right = Paddle(
+    x=WINDOW_WIDTH - ARENA_BORDER_WIDTH - PADDLE_OFFSET - PADDLE_WIDTH,
+    y=(WINDOW_HEIGHT - PADDLE_HEIGHT) // 2,
+    color=FUCHSIA,
+)
 action_buffers = [ActionBuffer(), ActionBuffer()]
 
 is_running = True
@@ -174,6 +202,8 @@ while is_running:
     screen.fill("black")
     arena.render(screen)
     divider.render(screen)
+    paddle_left.render(screen)
+    paddle_right.render(screen)
     pg.display.flip()
 
 pg.quit()
