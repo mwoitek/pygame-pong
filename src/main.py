@@ -1,7 +1,10 @@
 import pygame as pg
 
 WINDOW_WIDTH = 12 * 67
-WINDOW_HEIGHT = 12 * 50
+WINDOW_HEIGHT = 12 * 51
+ARENA_BORDER_WIDTH = 12
+
+DARK_BLUE = pg.Color(32, 32, 96)
 
 
 class Arena:
@@ -68,7 +71,11 @@ pg.init()
 
 screen = pg.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
 pg.display.set_caption("Pong")
-arena = Arena(border_width=12, gap_length=12 * 30, border_color="red")
+arena = Arena(
+    border_width=ARENA_BORDER_WIDTH,
+    gap_length=12 * 30,
+    border_color=DARK_BLUE,
+)
 
 is_running = True
 while is_running:
