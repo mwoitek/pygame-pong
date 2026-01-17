@@ -5,6 +5,9 @@ import pygame as pg
 WINDOW_WIDTH = 12 * 67
 WINDOW_HEIGHT = 12 * 51
 
+FPS = 60
+MAX_FRAME_TIME = 0.25
+
 ARENA_BORDER_WIDTH = 12
 PADDLE_WIDTH = 8
 PADDLE_HEIGHT = 12 * 10
@@ -190,6 +193,10 @@ paddle_right = Paddle(
 )
 action_buffers = [ActionBuffer(), ActionBuffer()]
 
+dt = 1 / FPS
+time_acc = 0
+clock = pg.time.Clock()
+
 is_running = True
 while is_running:
     for event in pg.event.get():
@@ -198,7 +205,14 @@ while is_running:
                 is_running = False
             case _:
                 pass
-    # update
+
+    frame_time = min(clock.tick() / 1e3, MAX_FRAME_TIME)
+    time_acc += frame_time
+    if time_acc >= dt:
+        paddle_left.update(action_buffers[0], dt)
+        paddle_right.update(action_buffers[1], dt)
+        time_acc -= dt
+
     screen.fill("black")
     arena.render(screen)
     divider.render(screen)
