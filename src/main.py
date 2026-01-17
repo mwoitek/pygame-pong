@@ -12,7 +12,7 @@ ARENA_BORDER_WIDTH = 12
 PADDLE_WIDTH = 8
 PADDLE_HEIGHT = 12 * 10
 PADDLE_OFFSET = 4
-PADDLE_VELOCITY = 0.5  # TODO: adjust this value
+PADDLE_VELOCITY = 12 * 39 / 1.5
 
 CYAN = pg.Color(91, 200, 175)
 DARK_BLUE = pg.Color(32, 32, 96)
@@ -170,6 +170,26 @@ class Paddle:
         screen.blit(self.surf, self.rect)
 
 
+PLAYER_KEYBINDINGS = [
+    {
+        Action.MOVE_DOWN: pg.K_w,
+        Action.MOVE_UP: pg.K_e,
+    },
+    {
+        Action.MOVE_DOWN: pg.K_i,
+        Action.MOVE_UP: pg.K_o,
+    },
+]
+
+
+def poll_inputs(action_buffers: list[ActionBuffer]) -> None:
+    keys = pg.key.get_pressed()
+    for action_buffer, bindings in zip(action_buffers, PLAYER_KEYBINDINGS, strict=True):
+        for action, key in bindings.items():
+            if keys[key]:
+                action_buffer[action] = True
+
+
 pg.init()
 
 screen = pg.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
@@ -205,6 +225,7 @@ while is_running:
                 is_running = False
             case _:
                 pass
+    poll_inputs(action_buffers)
 
     frame_time = min(clock.tick() / 1e3, MAX_FRAME_TIME)
     time_acc += frame_time
