@@ -6,11 +6,11 @@ type number = int | float
 
 WINDOW_WIDTH = 12 * 67
 WINDOW_HEIGHT = 12 * 51
+BORDER_WIDTH = 12
 
 FPS = 60
 MAX_FRAME_TIME = 0.25
 
-BORDER_WIDTH = 12
 PADDLE_WIDTH = 8
 PADDLE_HEIGHT = 12 * 10
 PADDLE_OFFSET = 4
@@ -85,6 +85,8 @@ class Arena:
 class Divider:
     def __init__(
         self,
+        /,
+        *,
         square_side: int,
         gap_length: int | None = None,
         color: pg.typing.ColorLike = "white",
@@ -92,32 +94,28 @@ class Divider:
         self.square_side = square_side
         self.gap_length = gap_length if gap_length is not None else square_side
         self.color = color
-        self.rects = self._get_rectangles()
         self.surf = self._get_surface()
+        self.pos = ((WINDOW_WIDTH - square_side) // 2, BORDER_WIDTH)
 
     def _get_rectangles(self) -> list[pg.Rect]:
-        rects: list[pg.Rect] = []
         delta_y = self.gap_length + self.square_side
         num_rects = (WINDOW_HEIGHT - 2 * BORDER_WIDTH + self.gap_length) // delta_y
-        for i in range(num_rects):
-            rect = pg.Rect(0, i * delta_y, self.square_side, self.square_side)
-            rects.append(rect)
-        return rects
+        return [
+            pg.Rect(0, i * delta_y, self.square_side, self.square_side) for i in range(num_rects)
+        ]
 
     def _get_surface(self) -> pg.Surface:
         square = pg.Surface((self.square_side, self.square_side))
         square.fill(self.color)
-        last_rect = self.rects[-1]
+        rects = self._get_rectangles()
+        last_rect = rects[-1]
         surf = pg.Surface((self.square_side, last_rect.y + last_rect.height))
-        for rect in self.rects:
-            surf.blit(square, rect)
+        blit_sequence = [(square, rect) for rect in rects]
+        surf.blits(blit_sequence, doreturn=0)
         return surf
 
     def render(self, screen: pg.Surface) -> None:
-        screen.blit(
-            self.surf,
-            ((WINDOW_WIDTH - self.square_side) // 2, BORDER_WIDTH),
-        )
+        screen.blit(self.surf, self.pos)
 
 
 class Action(IntEnum):
