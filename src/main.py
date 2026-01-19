@@ -248,19 +248,19 @@ class Game:
         pg.display.flip()
 
 
-arena = Arena(
-    border_width=BORDER_WIDTH,
-    gap_length=12 * 30,
-    border_color=DARK_BLUE,
-)
-divider = Divider(square_side=4, color=DARK_BLUE)
-paddle_left = Paddle(
-    x=BORDER_WIDTH + PADDLE_OFFSET,
-    y=(WINDOW_HEIGHT - PADDLE_HEIGHT) // 2,
-    color=CYAN,
-)
-paddle_right = Paddle(
-    x=WINDOW_WIDTH - BORDER_WIDTH - PADDLE_OFFSET - PADDLE_WIDTH,
-    y=(WINDOW_HEIGHT - PADDLE_HEIGHT) // 2,
-    color=FUCHSIA,
-)
+if __name__ == "__main__":
+    game = Game(
+        arena=Arena(gap_length=12 * 30, border_color=DARK_BLUE),
+        divider=Divider(square_side=4, color=DARK_BLUE),
+        paddle_left=Paddle(
+            x=BORDER_WIDTH + PADDLE_OFFSET,
+            y=(WINDOW_HEIGHT - PADDLE_HEIGHT) // 2,
+            color=CYAN,
+        ),
+        paddle_right=Paddle(
+            x=WINDOW_WIDTH - BORDER_WIDTH - PADDLE_OFFSET - PADDLE_WIDTH,
+            y=(WINDOW_HEIGHT - PADDLE_HEIGHT) // 2,
+            color=FUCHSIA,
+        ),
+    )
+    game.run()
