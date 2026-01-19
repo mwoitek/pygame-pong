@@ -2,13 +2,15 @@ from enum import IntEnum
 
 import pygame as pg
 
+type number = int | float
+
 WINDOW_WIDTH = 12 * 67
 WINDOW_HEIGHT = 12 * 51
 
 FPS = 60
 MAX_FRAME_TIME = 0.25
 
-ARENA_BORDER_WIDTH = 12
+BORDER_WIDTH = 12
 PADDLE_WIDTH = 8
 PADDLE_HEIGHT = 12 * 10
 PADDLE_OFFSET = 4
@@ -22,17 +24,15 @@ FUCHSIA = pg.Color(176, 48, 176)
 class Arena:
     def __init__(
         self,
-        border_width: int,
+        /,
+        *,
         gap_length: int,
+        border_width: int = BORDER_WIDTH,
         border_color: pg.typing.ColorLike = "white",
     ) -> None:
-        self.border_width = border_width
         self.gap_length = gap_length
+        self.border_width = border_width
         self.border_color = border_color
-        self.vertical_surf = self._get_vertical_surface()
-        self.horizontal_surf = self._get_horizontal_surface()
-        self.vertical_rects = self._get_vertical_rectangles()
-        self.horizontal_rects = self._get_horizontal_rectangles()
         self.surf = self._get_surface()
 
     def _get_vertical_surface(self) -> pg.Surface:
@@ -49,30 +49,33 @@ class Arena:
         surf.fill(self.border_color)
         return surf
 
-    def _get_vertical_rectangles(self) -> list[pg.Rect]:
+    def _get_vertical_blit_sequence(self) -> list[tuple[pg.Surface, pg.Rect]]:
+        vertical_surf = self._get_vertical_surface()
         x = WINDOW_WIDTH - self.border_width
-        y = self.vertical_surf.height + self.gap_length
+        y = vertical_surf.height + self.gap_length
         positions = [
             (0, 0),
             (0, y),
             (x, 0),
             (x, y),
         ]
-        return [self.vertical_surf.get_rect(topleft=topleft) for topleft in positions]
+        size = vertical_surf.size
+        return [(vertical_surf, pg.Rect(position, size)) for position in positions]
 
-    def _get_horizontal_rectangles(self) -> list[pg.Rect]:
+    def _get_horizontal_blit_sequence(self) -> list[tuple[pg.Surface, pg.Rect]]:
+        horizontal_surf = self._get_horizontal_surface()
         positions = [
             (self.border_width, 0),
             (self.border_width, WINDOW_HEIGHT - self.border_width),
         ]
-        return [self.horizontal_surf.get_rect(topleft=topleft) for topleft in positions]
+        size = horizontal_surf.size
+        return [(horizontal_surf, pg.Rect(position, size)) for position in positions]
 
     def _get_surface(self) -> pg.Surface:
         surf = pg.Surface((WINDOW_WIDTH, WINDOW_HEIGHT))
-        for rect in self.vertical_rects:
-            surf.blit(self.vertical_surf, rect)
-        for rect in self.horizontal_rects:
-            surf.blit(self.horizontal_surf, rect)
+        blit_sequence = self._get_vertical_blit_sequence()
+        blit_sequence.extend(self._get_horizontal_blit_sequence())
+        surf.blits(blit_sequence, doreturn=0)
         return surf
 
     def render(self, screen: pg.Surface) -> None:
@@ -95,7 +98,7 @@ class Divider:
     def _get_rectangles(self) -> list[pg.Rect]:
         rects: list[pg.Rect] = []
         delta_y = self.gap_length + self.square_side
-        num_rects = (WINDOW_HEIGHT - 2 * ARENA_BORDER_WIDTH + self.gap_length) // delta_y
+        num_rects = (WINDOW_HEIGHT - 2 * BORDER_WIDTH + self.gap_length) // delta_y
         for i in range(num_rects):
             rect = pg.Rect(0, i * delta_y, self.square_side, self.square_side)
             rects.append(rect)
@@ -113,7 +116,7 @@ class Divider:
     def render(self, screen: pg.Surface) -> None:
         screen.blit(
             self.surf,
-            ((WINDOW_WIDTH - self.square_side) // 2, ARENA_BORDER_WIDTH),
+            ((WINDOW_WIDTH - self.square_side) // 2, BORDER_WIDTH),
         )
 
 
@@ -146,7 +149,7 @@ class Paddle:
         self.rect = pg.FRect(x, y, width, height)
         self.velocity = velocity
         self.color = color
-        self.max_y = WINDOW_HEIGHT - ARENA_BORDER_WIDTH - height
+        self.max_y = WINDOW_HEIGHT - BORDER_WIDTH - height
         self.surf = self._get_surface()
 
     def _get_surface(self) -> pg.Surface:
@@ -162,7 +165,7 @@ class Paddle:
             action_buffer[Action.MOVE_DOWN] = False
         if action_buffer[Action.MOVE_UP]:
             y -= self.velocity * dt
-            y = max(y, ARENA_BORDER_WIDTH)
+            y = max(y, BORDER_WIDTH)
             action_buffer[Action.MOVE_UP] = False
         self.rect.y = y
 
@@ -196,18 +199,18 @@ screen = pg.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
 pg.display.set_caption("Pong")
 
 arena = Arena(
-    border_width=ARENA_BORDER_WIDTH,
+    border_width=BORDER_WIDTH,
     gap_length=12 * 30,
     border_color=DARK_BLUE,
 )
 divider = Divider(square_side=4, color=DARK_BLUE)
 paddle_left = Paddle(
-    x=ARENA_BORDER_WIDTH + PADDLE_OFFSET,
+    x=BORDER_WIDTH + PADDLE_OFFSET,
     y=(WINDOW_HEIGHT - PADDLE_HEIGHT) // 2,
     color=CYAN,
 )
 paddle_right = Paddle(
-    x=WINDOW_WIDTH - ARENA_BORDER_WIDTH - PADDLE_OFFSET - PADDLE_WIDTH,
+    x=WINDOW_WIDTH - BORDER_WIDTH - PADDLE_OFFSET - PADDLE_WIDTH,
     y=(WINDOW_HEIGHT - PADDLE_HEIGHT) // 2,
     color=FUCHSIA,
 )
