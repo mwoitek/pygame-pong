@@ -6,10 +6,8 @@ type number = int | float
 
 WINDOW_WIDTH = 12 * 67
 WINDOW_HEIGHT = 12 * 51
+WINDOW_TITLE = "Pong"
 BORDER_WIDTH = 12
-
-FPS = 60
-MAX_FRAME_TIME = 0.25
 
 PADDLE_WIDTH = 8
 PADDLE_HEIGHT = 12 * 10
@@ -19,6 +17,9 @@ PADDLE_VELOCITY = 12 * 39 / 1.5
 CYAN = pg.Color(91, 200, 175)
 DARK_BLUE = pg.Color(32, 32, 96)
 FUCHSIA = pg.Color(176, 48, 176)
+
+FPS = 60
+MAX_FRAME_TIME = 0.25
 
 
 class Arena:
@@ -183,18 +184,69 @@ PLAYER_KEYBINDINGS = [
 ]
 
 
-def poll_inputs(action_buffers: list[ActionBuffer]) -> None:
-    keys = pg.key.get_pressed()
-    for action_buffer, bindings in zip(action_buffers, PLAYER_KEYBINDINGS, strict=True):
-        for action, key in bindings.items():
-            if keys[key]:
-                action_buffer[action] = True
+class Game:
+    def __init__(
+        self,
+        /,
+        *,
+        arena: Arena,
+        divider: Divider,
+        paddle_left: Paddle,
+        paddle_right: Paddle,
+        fps: int = FPS,
+    ) -> None:
+        self.is_running = False
+        self.arena = arena
+        self.divider = divider
+        self.paddle_left = paddle_left
+        self.paddle_right = paddle_right
+        self.dt = 1 / fps
+        self._action_buffers = [ActionBuffer() for _ in range(len(PLAYER_KEYBINDINGS))]
 
+    def run(self) -> None:
+        pg.init()
+        self.screen = pg.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
+        pg.display.set_caption(WINDOW_TITLE)
+        time_acc = 0
+        clock = pg.time.Clock()
+        self.is_running = True
+        while self.is_running:
+            for event in pg.event.get():
+                self.handle_event(event)
+            self.get_actions()
+            time_acc += min(clock.tick() / 1e3, MAX_FRAME_TIME)
+            if time_acc >= self.dt:
+                self.update()
+                time_acc -= self.dt
+            self.render()
+        pg.quit()
 
-pg.init()
+    def handle_event(self, event: pg.event.Event) -> None:
+        match event.type:
+            case pg.QUIT:
+                self.is_running = False
+            case _:
+                pass
 
-screen = pg.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
-pg.display.set_caption("Pong")
+    def get_actions(self) -> None:
+        keys = pg.key.get_pressed()
+        for action_buffer, bindings in zip(self._action_buffers, PLAYER_KEYBINDINGS, strict=True):
+            for action, key in bindings.items():
+                if keys[key]:
+                    action_buffer[action] = True
+
+    def update(self) -> None:
+        self.paddle_left.update(self._action_buffers[0], self.dt)
+        self.paddle_right.update(self._action_buffers[1], self.dt)
+
+    def render(self) -> None:
+        self.screen.fill("black")
+        self.arena.render(self.screen)
+        self.divider.render(self.screen)
+        self.paddle_left.render(self.screen)
+        self.paddle_right.render(self.screen)
+        pg.display.flip()
+
 
 arena = Arena(
     border_width=BORDER_WIDTH,
@@ -212,34 +264,3 @@ paddle_right = Paddle(
     y=(WINDOW_HEIGHT - PADDLE_HEIGHT) // 2,
     color=FUCHSIA,
 )
-action_buffers = [ActionBuffer(), ActionBuffer()]
-
-dt = 1 / FPS
-time_acc = 0
-clock = pg.time.Clock()
-
-is_running = True
-while is_running:
-    for event in pg.event.get():
-        match event.type:
-            case pg.QUIT:
-                is_running = False
-            case _:
-                pass
-    poll_inputs(action_buffers)
-
-    frame_time = min(clock.tick() / 1e3, MAX_FRAME_TIME)
-    time_acc += frame_time
-    if time_acc >= dt:
-        paddle_left.update(action_buffers[0], dt)
-        paddle_right.update(action_buffers[1], dt)
-        time_acc -= dt
-
-    screen.fill("black")
-    arena.render(screen)
-    divider.render(screen)
-    paddle_left.render(screen)
-    paddle_right.render(screen)
-    pg.display.flip()
-
-pg.quit()
