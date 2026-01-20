@@ -86,8 +86,8 @@ def sweep(
     if entry_time > exit_time or entry_time < 0 or exit_time > dt:
         return None
     normal_x, normal_y = 0, 0
-    if x_entry_time > y_entry_time or isclose(x_entry_time - y_entry_time, 0):
-        normal_x = 1 if v1[0] - v2[0] < 0 else -1
+    if x_entry_time > y_entry_time or isclose(x_entry_time, y_entry_time):
+        normal_x = 1 if v1[0] < v2[0] else -1
     else:
-        normal_y = 1 if v1[1] - v2[1] < 0 else -1
+        normal_y = 1 if v1[1] < v2[1] else -1
     return entry_time, normal_x, normal_y
