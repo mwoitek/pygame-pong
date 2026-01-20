@@ -1,8 +1,10 @@
 from enum import IntEnum
+from typing import Literal
 
 import pygame as pg
 
-type number = int | float
+type Number = int | float
+type PaddleSide = Literal["left", "right"]
 
 WINDOW_WIDTH = 12 * 67
 WINDOW_HEIGHT = 12 * 51
@@ -138,18 +140,33 @@ class ActionBuffer:
 class Paddle:
     def __init__(
         self,
-        x: float,
-        y: float,
-        width: float = PADDLE_WIDTH,
-        height: float = PADDLE_HEIGHT,
-        velocity: float = PADDLE_VELOCITY,
+        /,
+        *,
+        side: PaddleSide,
+        width: Number = PADDLE_WIDTH,
+        height: Number = PADDLE_HEIGHT,
+        offset: Number = PADDLE_OFFSET,
+        velocity: Number = PADDLE_VELOCITY,
         color: pg.typing.ColorLike = "white",
     ) -> None:
-        self.rect = pg.FRect(x, y, width, height)
+        self.width = width
+        self.height = height
+        self.offset = offset
         self.velocity = velocity
         self.color = color
-        self.max_y = WINDOW_HEIGHT - BORDER_WIDTH - height
+        self.init_pos = self._get_initial_position(side)
+        self.rect = pg.FRect(self.init_pos, (width, height))
         self.surf = self._get_surface()
+        self.min_y = BORDER_WIDTH + offset
+        self.max_y = WINDOW_HEIGHT - BORDER_WIDTH - offset - height
+
+    def _get_initial_position(self, side: PaddleSide) -> tuple[Number, Number]:
+        if side == "left":
+            x = BORDER_WIDTH + self.offset
+        else:
+            x = WINDOW_WIDTH - BORDER_WIDTH - self.offset - self.width
+        y = (WINDOW_HEIGHT - self.height) / 2
+        return x, y
 
     def _get_surface(self) -> pg.Surface:
         surf = pg.Surface(self.rect.size)
@@ -164,7 +181,7 @@ class Paddle:
             action_buffer[Action.MOVE_DOWN] = False
         if action_buffer[Action.MOVE_UP]:
             y -= self.velocity * dt
-            y = max(y, BORDER_WIDTH)
+            y = max(y, self.min_y)
             action_buffer[Action.MOVE_UP] = False
         self.rect.y = y
 
@@ -252,15 +269,7 @@ if __name__ == "__main__":
     game = Game(
         arena=Arena(gap_length=12 * 30, border_color=DARK_BLUE),
         divider=Divider(square_side=4, color=DARK_BLUE),
-        paddle_left=Paddle(
-            x=BORDER_WIDTH + PADDLE_OFFSET,
-            y=(WINDOW_HEIGHT - PADDLE_HEIGHT) // 2,
-            color=CYAN,
-        ),
-        paddle_right=Paddle(
-            x=WINDOW_WIDTH - BORDER_WIDTH - PADDLE_OFFSET - PADDLE_WIDTH,
-            y=(WINDOW_HEIGHT - PADDLE_HEIGHT) // 2,
-            color=FUCHSIA,
-        ),
+        paddle_left=Paddle(side="left", color=CYAN),
+        paddle_right=Paddle(side="right", color=FUCHSIA),
     )
     game.run()
