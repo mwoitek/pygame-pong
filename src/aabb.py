@@ -1,5 +1,8 @@
+from collections.abc import Iterable, Iterator
 from math import isclose
 from typing import Protocol
+
+import pygame as pg
 
 type Number = int | float
 
@@ -102,3 +105,34 @@ def sweep(
     else:
         normal_y = 1 if v1[1] < v2[1] else -1
     return entry_time, normal_x, normal_y
+
+
+# Dealing with multiple collisions
+
+
+def swept_bounding_box(
+    r: RectLike,
+    v: IntIndexable,
+    dt: float,
+) -> tuple[float, float, float, float]:
+    x1, x2 = r.x, r.x + r.width
+    y1, y2 = r.y, r.y + r.height
+    delta_x, delta_y = v[0] * dt, v[1] * dt
+    x_min = min(x1, x1 + delta_x)
+    x_max = max(x2, x2 + delta_x)
+    y_min = min(y1, y1 + delta_y)
+    y_max = max(y2, y2 + delta_y)
+    width = x_max - x_min
+    height = y_max - y_min
+    return x_min, y_min, width, height
+
+
+def filter_rectangles(
+    rs: Iterable[RectLike],
+    r: RectLike,
+    v: IntIndexable,
+    dt: float,
+) -> Iterator[RectLike]:
+    # QUESTION: Is it possible to avoid pygame types?
+    box = pg.FRect(*swept_bounding_box(r, v, dt))  # pygame-specific
+    return (t for t in rs if rectangles_overlap(t, box))  # pyright: ignore[reportArgumentType]
