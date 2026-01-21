@@ -1,10 +1,11 @@
+import random
 from enum import IntEnum
 from typing import Literal
 
 import pygame as pg
 
 type Number = int | float
-type PaddleSide = Literal["left", "right"]
+type Side = Literal["left", "right"]
 
 WINDOW_WIDTH = 12 * 67
 WINDOW_HEIGHT = 12 * 51
@@ -14,7 +15,10 @@ BORDER_WIDTH = 12
 PADDLE_WIDTH = 8
 PADDLE_HEIGHT = 12 * 10
 PADDLE_OFFSET = 4
-PADDLE_VELOCITY = 12 * 39 / 1.5
+PADDLE_VELOCITY = 460 / 1.15
+
+SPAWN_AREA_WIDTH = 12 * 4
+SPAWN_AREA_HEIGHT = 12 * 45
 
 CYAN = pg.Color(91, 200, 175)
 DARK_BLUE = pg.Color(32, 32, 96)
@@ -142,7 +146,7 @@ class Paddle:
         self,
         /,
         *,
-        side: PaddleSide,
+        side: Side,
         width: Number = PADDLE_WIDTH,
         height: Number = PADDLE_HEIGHT,
         offset: Number = PADDLE_OFFSET,
@@ -160,7 +164,7 @@ class Paddle:
         self.min_y = BORDER_WIDTH + offset
         self.max_y = WINDOW_HEIGHT - BORDER_WIDTH - offset - height
 
-    def _get_initial_position(self, side: PaddleSide) -> tuple[Number, Number]:
+    def _get_initial_position(self, side: Side) -> tuple[Number, Number]:
         if side == "left":
             x = BORDER_WIDTH + self.offset
         else:
@@ -187,6 +191,32 @@ class Paddle:
 
     def render(self, screen: pg.Surface) -> None:
         screen.blit(self.surf, self.rect)
+
+
+class Ball:
+    def __init__(
+        self,
+        square_side: int,
+        color: pg.typing.ColorLike = "white",
+    ) -> None:
+        self.square_side = square_side
+        self.color = color
+        self.rect = pg.FRect(0, 0, square_side, square_side)
+        side = random.choice(["left", "right"])
+        self.set_random_position(side)  # pyright: ignore[reportArgumentType]
+        # TODO: finish
+
+    def set_random_position(self, side: Side) -> None:
+        if side == "left":
+            x_min = (WINDOW_WIDTH - SPAWN_AREA_WIDTH) / 2
+            x_max = WINDOW_WIDTH / 2
+        else:
+            x_min = WINDOW_WIDTH / 2
+            x_max = (WINDOW_WIDTH + SPAWN_AREA_WIDTH) / 2
+        y_min = (WINDOW_HEIGHT - SPAWN_AREA_HEIGHT) / 2
+        y_max = WINDOW_HEIGHT - y_min
+        self.rect.x = random.uniform(x_min, x_max)
+        self.rect.y = random.uniform(y_min, y_max)
 
 
 PLAYER_KEYBINDINGS = [
