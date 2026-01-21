@@ -1,15 +1,13 @@
+import math
 from collections.abc import Iterable, Iterator
-from math import isclose
 
 import pygame as pg
 
 type Number = int | float
 type Rect = pg.Rect | pg.FRect
 
-INFINITY = float("inf")
 
-
-def ge(
+def isclose(
     a: Number,
     b: Number,
     /,
@@ -17,7 +15,11 @@ def ge(
     rel_tol: float = 1e-05,
     abs_tol: float = 1e-08,
 ) -> bool:
-    return a > b or isclose(a, b, rel_tol=rel_tol, abs_tol=abs_tol)
+    return math.isclose(a, b, rel_tol=rel_tol, abs_tol=abs_tol)
+
+
+def ge(a: Number, b: Number) -> bool:
+    return a > b or isclose(a, b)
 
 
 # Ordinary AABB
@@ -56,7 +58,7 @@ def sweep_axis(
     v = v1 - v2
     if isclose(v, 0):
         if intervals_overlap(a1, b1, a2, b2):
-            return -INFINITY, INFINITY
+            return -math.inf, math.inf
         return None
     t1 = (a2 - b1) / v
     t2 = (b2 - a1) / v
