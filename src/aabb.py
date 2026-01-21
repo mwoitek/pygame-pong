@@ -1,23 +1,12 @@
 from collections.abc import Iterable, Iterator
 from math import isclose
-from typing import Protocol
 
 import pygame as pg
 
 type Number = int | float
+type Rect = pg.Rect | pg.FRect
 
 INFINITY = float("inf")
-
-
-class RectLike(Protocol):
-    x: Number
-    y: Number
-    width: Number
-    height: Number
-
-
-class IntIndexable(Protocol):
-    def __getitem__(self, index: int) -> Number: ...
 
 
 def ge(
@@ -32,8 +21,6 @@ def ge(
 
 
 # Ordinary AABB
-
-
 def intervals_overlap(
     a1: Number,
     b1: Number,
@@ -43,7 +30,7 @@ def intervals_overlap(
     return ge(min(b1, b2), max(a1, a2))
 
 
-def rectangles_overlap(r1: RectLike, r2: RectLike) -> bool:
+def rectangles_overlap(r1: Rect, r2: Rect) -> bool:
     return intervals_overlap(
         r1.x,
         r1.x + r1.width,
@@ -58,8 +45,6 @@ def rectangles_overlap(r1: RectLike, r2: RectLike) -> bool:
 
 
 # Swept AABB
-
-
 def sweep_axis(
     a1: Number,
     b1: Number,
@@ -81,16 +66,16 @@ def sweep_axis(
 
 
 def sweep(
-    r1: RectLike,
-    r2: RectLike,
-    v1: IntIndexable,
-    v2: IntIndexable,
+    r1: Rect,
+    r2: Rect,
+    v1: pg.Vector2,
+    v2: pg.Vector2,
     dt: float,
 ) -> tuple[float, int, int] | None:
-    res_x = sweep_axis(r1.x, r1.x + r1.width, r2.x, r2.x + r2.width, v1[0], v2[0])
+    res_x = sweep_axis(r1.x, r1.x + r1.width, r2.x, r2.x + r2.width, v1.x, v2.x)
     if res_x is None:
         return None
-    res_y = sweep_axis(r1.y, r1.y + r1.height, r2.y, r2.y + r2.height, v1[1], v2[1])
+    res_y = sweep_axis(r1.y, r1.y + r1.height, r2.y, r2.y + r2.height, v1.y, v2.y)
     if res_y is None:
         return None
     x_entry_time, x_exit_time = res_x
@@ -101,38 +86,31 @@ def sweep(
         return None
     normal_x, normal_y = 0, 0
     if ge(x_entry_time, y_entry_time):
-        normal_x = 1 if v1[0] < v2[0] else -1
+        normal_x = 1 if v1.x < v2.x else -1
     else:
-        normal_y = 1 if v1[1] < v2[1] else -1
+        normal_y = 1 if v1.y < v2.y else -1
     return entry_time, normal_x, normal_y
 
 
 # Dealing with multiple collisions
-
-
-def swept_bounding_box(
-    r: RectLike,
-    v: IntIndexable,
-    dt: float,
-) -> tuple[float, float, float, float]:
+def swept_bounding_box(r: Rect, v: pg.Vector2, dt: float) -> pg.FRect:
     x1, x2 = r.x, r.x + r.width
     y1, y2 = r.y, r.y + r.height
-    delta_x, delta_y = v[0] * dt, v[1] * dt
-    x_min = min(x1, x1 + delta_x)
-    x_max = max(x2, x2 + delta_x)
-    y_min = min(y1, y1 + delta_y)
-    y_max = max(y2, y2 + delta_y)
+    delta = v * dt
+    x_min = min(x1, x1 + delta.x)
+    x_max = max(x2, x2 + delta.x)
+    y_min = min(y1, y1 + delta.y)
+    y_max = max(y2, y2 + delta.y)
     width = x_max - x_min
     height = y_max - y_min
-    return x_min, y_min, width, height
+    return pg.FRect(x_min, y_min, width, height)
 
 
 def filter_rectangles(
-    rs: Iterable[RectLike],
-    r: RectLike,
-    v: IntIndexable,
+    rs: Iterable[Rect],
+    r: Rect,
+    v: pg.Vector2,
     dt: float,
-) -> Iterator[RectLike]:
-    # QUESTION: Is it possible to avoid pygame types?
-    box = pg.FRect(*swept_bounding_box(r, v, dt))  # pygame-specific
-    return (t for t in rs if rectangles_overlap(t, box))  # pyright: ignore[reportArgumentType]
+) -> Iterator[Rect]:
+    bbox = swept_bounding_box(r, v, dt)
+    return (t for t in rs if rectangles_overlap(t, bbox))
