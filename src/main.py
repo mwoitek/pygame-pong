@@ -27,6 +27,8 @@ FUCHSIA = pg.Color(176, 48, 176)
 FPS = 60
 MAX_FRAME_TIME = 0.25
 
+random.seed(a=60693174)
+
 
 class Arena:
     def __init__(
@@ -196,6 +198,8 @@ class Paddle:
 class Ball:
     def __init__(
         self,
+        /,
+        *,
         square_side: int,
         color: pg.typing.ColorLike = "white",
     ) -> None:
@@ -204,7 +208,7 @@ class Ball:
         self.rect = pg.FRect(0, 0, square_side, square_side)
         side = random.choice(["left", "right"])
         self.set_random_position(side)  # pyright: ignore[reportArgumentType]
-        # TODO: finish
+        self.surf = self._get_surface()
 
     def set_random_position(self, side: Side) -> None:
         if side == "left":
@@ -217,6 +221,14 @@ class Ball:
         y_max = WINDOW_HEIGHT - y_min
         self.rect.x = random.uniform(x_min, x_max)
         self.rect.y = random.uniform(y_min, y_max)
+
+    def _get_surface(self) -> pg.Surface:
+        surf = pg.Surface(self.rect.size)
+        surf.fill(self.color)
+        return surf
+
+    def render(self, screen: pg.Surface) -> None:
+        screen.blit(self.surf, self.rect)
 
 
 PLAYER_KEYBINDINGS = [
@@ -240,6 +252,7 @@ class Game:
         divider: Divider,
         paddle_left: Paddle,
         paddle_right: Paddle,
+        ball: Ball,
         fps: int = FPS,
     ) -> None:
         self.is_running = False
@@ -247,6 +260,7 @@ class Game:
         self.divider = divider
         self.paddle_left = paddle_left
         self.paddle_right = paddle_right
+        self.ball = ball
         self.dt = 1 / fps
         self._action_buffers = [ActionBuffer() for _ in range(len(PLAYER_KEYBINDINGS))]
 
@@ -292,6 +306,7 @@ class Game:
         self.divider.render(self.screen)
         self.paddle_left.render(self.screen)
         self.paddle_right.render(self.screen)
+        self.ball.render(self.screen)
         pg.display.flip()
 
 
@@ -301,5 +316,6 @@ if __name__ == "__main__":
         divider=Divider(square_side=4, color=DARK_BLUE),
         paddle_left=Paddle(side="left", color=CYAN),
         paddle_right=Paddle(side="right", color=FUCHSIA),
+        ball=Ball(square_side=12),
     )
     game.run()
