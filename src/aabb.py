@@ -17,6 +17,17 @@ class IntIndexable(Protocol):
     def __getitem__(self, index: int) -> Number: ...
 
 
+def ge(
+    a: Number,
+    b: Number,
+    /,
+    *,
+    rel_tol: float = 1e-05,
+    abs_tol: float = 1e-08,
+) -> bool:
+    return a > b or isclose(a, b, rel_tol=rel_tol, abs_tol=abs_tol)
+
+
 # Ordinary AABB
 
 
@@ -26,7 +37,7 @@ def intervals_overlap(
     a2: Number,
     b2: Number,
 ) -> bool:
-    return max(a1, a2) <= min(b1, b2)
+    return ge(min(b1, b2), max(a1, a2))
 
 
 def rectangles_overlap(r1: RectLike, r2: RectLike) -> bool:
@@ -86,7 +97,7 @@ def sweep(
     if entry_time > exit_time or entry_time < 0 or exit_time > dt:
         return None
     normal_x, normal_y = 0, 0
-    if x_entry_time > y_entry_time or isclose(x_entry_time, y_entry_time):
+    if ge(x_entry_time, y_entry_time):
         normal_x = 1 if v1[0] < v2[0] else -1
     else:
         normal_y = 1 if v1[1] < v2[1] else -1
