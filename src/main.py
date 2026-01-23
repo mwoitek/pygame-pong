@@ -4,13 +4,12 @@ from typing import Literal
 
 import pygame as pg
 
-type Number = int | float
 type Side = Literal["left", "right"]
 
-WINDOW_WIDTH = 12 * 67
-WINDOW_HEIGHT = 12 * 51
+WINDOW_WIDTH = 800
+WINDOW_HEIGHT = 600
 WINDOW_TITLE = "Pong"
-BORDER_WIDTH = 12
+BORDER_WIDTH = 10
 
 PADDLE_WIDTH = 8
 PADDLE_HEIGHT = 12 * 10
@@ -35,60 +34,44 @@ class Arena:
         self,
         /,
         *,
-        gap_length: int,
-        border_width: int = BORDER_WIDTH,
-        border_color: pg.typing.ColorLike = "white",
+        color: pg.typing.ColorLike = "white",
     ) -> None:
-        self.gap_length = gap_length
-        self.border_width = border_width
-        self.border_color = border_color
-        self.surf = self._get_surface()
+        self._vertical_rects = self._get_vertical_rectangles()
+        self._horizontal_rects = self._get_horizontal_rectangles()
+        self.rects = self._vertical_rects + self._horizontal_rects
+        self._surf = self._get_surface(color)
 
-    def _get_vertical_surface(self) -> pg.Surface:
-        width = self.border_width
-        height = (WINDOW_HEIGHT - self.gap_length) // 2
-        surf = pg.Surface((width, height))
-        surf.fill(self.border_color)
+    def _get_vertical_rectangles(self) -> list[pg.Rect]:
+        positions = [(0, 0), (0, 500), (790, 0), (790, 500)]
+        size = (10, 100)
+        return [pg.Rect(position, size) for position in positions]
+
+    def _get_horizontal_rectangles(self) -> list[pg.Rect]:
+        positions = [(10, 0), (10, 590)]
+        size = (780, 10)
+        return [pg.Rect(position, size) for position in positions]
+
+    def _get_vertical_surface(self, color: pg.typing.ColorLike) -> pg.Surface:
+        surf = pg.Surface(self._vertical_rects[0].size)
+        surf.fill(color)
         return surf
 
-    def _get_horizontal_surface(self) -> pg.Surface:
-        width = WINDOW_WIDTH - 2 * self.border_width
-        height = self.border_width
-        surf = pg.Surface((width, height))
-        surf.fill(self.border_color)
+    def _get_horizontal_surface(self, color: pg.typing.ColorLike) -> pg.Surface:
+        surf = pg.Surface(self._horizontal_rects[0].size)
+        surf.fill(color)
         return surf
 
-    def _get_vertical_blit_sequence(self) -> list[tuple[pg.Surface, pg.Rect]]:
-        vertical_surf = self._get_vertical_surface()
-        x = WINDOW_WIDTH - self.border_width
-        y = vertical_surf.height + self.gap_length
-        positions = [
-            (0, 0),
-            (0, y),
-            (x, 0),
-            (x, y),
-        ]
-        size = vertical_surf.size
-        return [(vertical_surf, pg.Rect(position, size)) for position in positions]
-
-    def _get_horizontal_blit_sequence(self) -> list[tuple[pg.Surface, pg.Rect]]:
-        horizontal_surf = self._get_horizontal_surface()
-        positions = [
-            (self.border_width, 0),
-            (self.border_width, WINDOW_HEIGHT - self.border_width),
-        ]
-        size = horizontal_surf.size
-        return [(horizontal_surf, pg.Rect(position, size)) for position in positions]
-
-    def _get_surface(self) -> pg.Surface:
+    def _get_surface(self, color: pg.typing.ColorLike) -> pg.Surface:
         surf = pg.Surface((WINDOW_WIDTH, WINDOW_HEIGHT))
-        blit_sequence = self._get_vertical_blit_sequence()
-        blit_sequence.extend(self._get_horizontal_blit_sequence())
+        vertical_surf = self._get_vertical_surface(color)
+        horizontal_surf = self._get_horizontal_surface(color)
+        blit_sequence = [(vertical_surf, rect) for rect in self._vertical_rects]
+        blit_sequence += [(horizontal_surf, rect) for rect in self._horizontal_rects]
         surf.blits(blit_sequence, doreturn=0)
         return surf
 
     def render(self, screen: pg.Surface) -> None:
-        screen.blit(self.surf)
+        screen.blit(self._surf)
 
 
 class Divider:
@@ -312,7 +295,7 @@ class Game:
 
 if __name__ == "__main__":
     game = Game(
-        arena=Arena(gap_length=12 * 30, border_color=DARK_BLUE),
+        arena=Arena(color=DARK_BLUE),
         divider=Divider(square_side=4, color=DARK_BLUE),
         paddle_left=Paddle(side="left", color=CYAN),
         paddle_right=Paddle(side="right", color=FUCHSIA),
