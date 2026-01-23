@@ -12,9 +12,8 @@ WINDOW_TITLE = "Pong"
 BORDER_WIDTH = 10
 
 PADDLE_WIDTH = 8
-PADDLE_HEIGHT = 12 * 10
-PADDLE_OFFSET = 4
-PADDLE_VELOCITY = 460 / 1.15
+PADDLE_HEIGHT = 96
+PADDLE_VELOCITY = 6
 
 SPAWN_AREA_WIDTH = 12 * 4
 SPAWN_AREA_HEIGHT = 12 * 45
@@ -106,55 +105,26 @@ class ActionBuffer:
 
 
 class Paddle:
-    def __init__(
-        self,
-        /,
-        *,
-        side: Side,
-        width: Number = PADDLE_WIDTH,
-        height: Number = PADDLE_HEIGHT,
-        offset: Number = PADDLE_OFFSET,
-        velocity: Number = PADDLE_VELOCITY,
-        color: pg.typing.ColorLike = "white",
-    ) -> None:
-        self.width = width
-        self.height = height
-        self.offset = offset
-        self.velocity = velocity
-        self.color = color
-        self.init_pos = self._get_initial_position(side)
-        self.rect = pg.FRect(self.init_pos, (width, height))
-        self.surf = self._get_surface()
-        self.min_y = BORDER_WIDTH + offset
-        self.max_y = WINDOW_HEIGHT - BORDER_WIDTH - offset - height
+    def __init__(self, /, *, side: Side, color: pg.typing.ColorLike = "white") -> None:
+        self._init_pos = (12 if side == "left" else 780, 252)
+        self.rect = pg.Rect(self._init_pos, (PADDLE_WIDTH, PADDLE_HEIGHT))
+        self._surf = self._get_surface(color)
 
-    def _get_initial_position(self, side: Side) -> tuple[Number, Number]:
-        if side == "left":
-            x = BORDER_WIDTH + self.offset
-        else:
-            x = WINDOW_WIDTH - BORDER_WIDTH - self.offset - self.width
-        y = (WINDOW_HEIGHT - self.height) / 2
-        return x, y
-
-    def _get_surface(self) -> pg.Surface:
+    def _get_surface(self, color: pg.typing.ColorLike) -> pg.Surface:
         surf = pg.Surface(self.rect.size)
-        surf.fill(self.color)
+        surf.fill(color)
         return surf
 
-    def update(self, action_buffer: ActionBuffer, dt: float) -> None:
-        y = self.rect.y
+    def update(self, action_buffer: ActionBuffer) -> None:
         if action_buffer[Action.MOVE_DOWN]:
-            y += self.velocity * dt
-            y = min(y, self.max_y)
+            self.rect.y = min(self.rect.y + PADDLE_VELOCITY, 492)
             action_buffer[Action.MOVE_DOWN] = False
         if action_buffer[Action.MOVE_UP]:
-            y -= self.velocity * dt
-            y = max(y, self.min_y)
+            self.rect.y = max(self.rect.y - PADDLE_VELOCITY, 12)
             action_buffer[Action.MOVE_UP] = False
-        self.rect.y = y
 
     def render(self, screen: pg.Surface) -> None:
-        screen.blit(self.surf, self.rect)
+        screen.blit(self._surf, self.rect)
 
 
 class Ball:
@@ -259,8 +229,8 @@ class Game:
                     action_buffer[action] = True
 
     def update(self) -> None:
-        self.paddle_left.update(self._action_buffers[0], self.dt)
-        self.paddle_right.update(self._action_buffers[1], self.dt)
+        self.paddle_left.update(self._action_buffers[0])
+        self.paddle_right.update(self._action_buffers[1])
 
     def render(self) -> None:
         self.screen.fill("black")
