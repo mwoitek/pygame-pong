@@ -30,12 +30,7 @@ random.seed(a=60693174)
 
 
 class Arena:
-    def __init__(
-        self,
-        /,
-        *,
-        color: pg.typing.ColorLike = "white",
-    ) -> None:
+    def __init__(self, /, *, color: pg.typing.ColorLike = "white") -> None:
         self._vertical_rects = self._get_vertical_rectangles()
         self._horizontal_rects = self._get_horizontal_rectangles()
         self.rects = self._vertical_rects + self._horizontal_rects
@@ -75,39 +70,23 @@ class Arena:
 
 
 class Divider:
-    def __init__(
-        self,
-        /,
-        *,
-        square_side: int,
-        gap_length: int | None = None,
-        color: pg.typing.ColorLike = "white",
-    ) -> None:
-        self.square_side = square_side
-        self.gap_length = gap_length if gap_length is not None else square_side
-        self.color = color
-        self.surf = self._get_surface()
-        self.pos = ((WINDOW_WIDTH - square_side) // 2, BORDER_WIDTH)
+    def __init__(self, /, *, color: pg.typing.ColorLike = "white") -> None:
+        self._surf = self._get_surface(color)
+        self._pos = (398, 10)
 
     def _get_rectangles(self) -> list[pg.Rect]:
-        delta_y = self.gap_length + self.square_side
-        num_rects = (WINDOW_HEIGHT - 2 * BORDER_WIDTH + self.gap_length) // delta_y
-        return [
-            pg.Rect(0, i * delta_y, self.square_side, self.square_side) for i in range(num_rects)
-        ]
+        return [pg.Rect(0, i * 8, 4, 4) for i in range(73)]
 
-    def _get_surface(self) -> pg.Surface:
-        square = pg.Surface((self.square_side, self.square_side))
-        square.fill(self.color)
-        rects = self._get_rectangles()
-        last_rect = rects[-1]
-        surf = pg.Surface((self.square_side, last_rect.y + last_rect.height))
-        blit_sequence = [(square, rect) for rect in rects]
+    def _get_surface(self, color: pg.typing.ColorLike) -> pg.Surface:
+        square = pg.Surface((4, 4))
+        square.fill(color)
+        surf = pg.Surface((4, 580))
+        blit_sequence = [(square, rect) for rect in self._get_rectangles()]
         surf.blits(blit_sequence, doreturn=0)
         return surf
 
     def render(self, screen: pg.Surface) -> None:
-        screen.blit(self.surf, self.pos)
+        screen.blit(self._surf, self._pos)
 
 
 class Action(IntEnum):
@@ -296,7 +275,7 @@ class Game:
 if __name__ == "__main__":
     game = Game(
         arena=Arena(color=DARK_BLUE),
-        divider=Divider(square_side=4, color=DARK_BLUE),
+        divider=Divider(color=DARK_BLUE),
         paddle_left=Paddle(side="left", color=CYAN),
         paddle_right=Paddle(side="right", color=FUCHSIA),
         ball=Ball(square_side=12),
