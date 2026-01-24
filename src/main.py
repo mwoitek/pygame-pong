@@ -1,6 +1,6 @@
 import random
 from enum import IntEnum
-from typing import Literal
+from typing import Literal, cast
 
 import pygame as pg
 
@@ -15,8 +15,8 @@ PADDLE_WIDTH = 8
 PADDLE_HEIGHT = 96
 PADDLE_VELOCITY = 6
 
-SPAWN_AREA_WIDTH = 12 * 4
-SPAWN_AREA_HEIGHT = 12 * 45
+BALL_SIZE = 10
+BALL_VELOCITY = 10
 
 CYAN = pg.Color(91, 200, 175)
 DARK_BLUE = pg.Color(32, 32, 96)
@@ -128,39 +128,28 @@ class Paddle:
 
 
 class Ball:
-    def __init__(
-        self,
-        /,
-        *,
-        square_side: int,
-        color: pg.typing.ColorLike = "white",
-    ) -> None:
-        self.square_side = square_side
-        self.color = color
-        self.rect = pg.FRect(0, 0, square_side, square_side)
-        side = random.choice(["left", "right"])
-        self.set_random_position(side)  # pyright: ignore[reportArgumentType]
-        self.surf = self._get_surface()
+    def __init__(self, /, *, color: pg.typing.ColorLike = "white") -> None:
+        self.rect = pg.Rect(0, 0, BALL_SIZE, BALL_SIZE)
+        side = cast("Side", random.choice(["left", "right"]))
+        self._set_random_position(side)
+        self._surf = self._get_surface(color)
 
-    def set_random_position(self, side: Side) -> None:
+    def _set_random_position(self, side: Side) -> None:
         if side == "left":
-            x_min = (WINDOW_WIDTH - SPAWN_AREA_WIDTH) / 2
-            x_max = WINDOW_WIDTH / 2
+            x_min, x_max = 370, 400
         else:
-            x_min = WINDOW_WIDTH / 2
-            x_max = (WINDOW_WIDTH + SPAWN_AREA_WIDTH) / 2
-        y_min = (WINDOW_HEIGHT - SPAWN_AREA_HEIGHT) / 2
-        y_max = WINDOW_HEIGHT - y_min
-        self.rect.x = random.uniform(x_min, x_max)
-        self.rect.y = random.uniform(y_min, y_max)
+            x_min, x_max = 401, 431
+        y_min, y_max = 60, 541
+        self.rect.centerx = random.randrange(x_min, x_max)
+        self.rect.centery = random.randrange(y_min, y_max)
 
-    def _get_surface(self) -> pg.Surface:
+    def _get_surface(self, color: pg.typing.ColorLike) -> pg.Surface:
         surf = pg.Surface(self.rect.size)
-        surf.fill(self.color)
+        surf.fill(color)
         return surf
 
     def render(self, screen: pg.Surface) -> None:
-        screen.blit(self.surf, self.rect)
+        screen.blit(self._surf, self.rect)
 
 
 PLAYER_KEYBINDINGS = [
@@ -248,6 +237,6 @@ if __name__ == "__main__":
         divider=Divider(color=DARK_BLUE),
         paddle_left=Paddle(side="left", color=CYAN),
         paddle_right=Paddle(side="right", color=FUCHSIA),
-        ball=Ball(square_side=12),
+        ball=Ball(),
     )
     game.run()
