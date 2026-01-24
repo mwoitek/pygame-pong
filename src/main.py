@@ -23,7 +23,8 @@ DARK_BLUE = pg.Color(32, 32, 96)
 FUCHSIA = pg.Color(176, 48, 176)
 
 FPS = 60
-MAX_FRAME_TIME = 0.25
+FIXED_DT_US = 1_000_000 // FPS
+FIXED_DT_REM = 1_000_000 % FPS
 
 random.seed(a=60693174)
 
@@ -174,7 +175,6 @@ class Game:
         paddle_left: Paddle,
         paddle_right: Paddle,
         ball: Ball,
-        fps: int = FPS,
     ) -> None:
         self.is_running = False
         self.arena = arena
@@ -182,7 +182,6 @@ class Game:
         self.paddle_left = paddle_left
         self.paddle_right = paddle_right
         self.ball = ball
-        self.dt = 1 / fps
         self._action_buffers = [ActionBuffer() for _ in range(len(PLAYER_KEYBINDINGS))]
 
     def run(self) -> None:
@@ -190,16 +189,21 @@ class Game:
         self.screen = pg.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
         pg.display.set_caption(WINDOW_TITLE)
         time_acc = 0
+        time_err = 0
         clock = pg.time.Clock()
         self.is_running = True
         while self.is_running:
             for event in pg.event.get():
                 self.handle_event(event)
             self.get_actions()
-            time_acc += min(clock.tick() / 1e3, MAX_FRAME_TIME)
-            if time_acc >= self.dt:
+            time_acc += clock.tick() * 1_000  # TODO: enforce max value
+            if time_acc >= FIXED_DT_US:
                 self.update()
-                time_acc -= self.dt
+                time_acc -= FIXED_DT_US
+                time_err += FIXED_DT_REM
+                if time_err >= FPS:
+                    time_acc -= 1
+                    time_err -= FPS
             self.render()
         pg.quit()
 
