@@ -3,7 +3,7 @@ import pygame as pg
 
 # Intervals
 def intervals_overlap(a1: int, b1: int, a2: int, b2: int) -> bool:
-    return a1 <= b2 and a2 <= b1
+    return a1 < b2 and a2 < b1
 
 
 def overlap_length(a1: int, b1: int, a2: int, b2: int) -> int:

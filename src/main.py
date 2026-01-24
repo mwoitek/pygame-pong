@@ -4,6 +4,8 @@ from typing import Literal, cast
 
 import pygame as pg
 
+import aabb
+
 type Side = Literal["left", "right"]
 
 WINDOW_WIDTH = 800
@@ -16,7 +18,7 @@ PADDLE_HEIGHT = 96
 PADDLE_VELOCITY = 6
 
 BALL_SIZE = 10
-BALL_VELOCITY = 10
+BALL_VELOCITY = 6
 
 CYAN = pg.Color(91, 200, 175)
 DARK_BLUE = pg.Color(32, 32, 96)
@@ -133,6 +135,9 @@ class Ball:
         self.rect = pg.Rect(0, 0, BALL_SIZE, BALL_SIZE)
         side = cast("Side", random.choice(["left", "right"]))
         self._set_random_position(side)
+        # TODO: randomize
+        self._vel_x = BALL_VELOCITY
+        self._vel_y = BALL_VELOCITY
         self._surf = self._get_surface(color)
 
     def _set_random_position(self, side: Side) -> None:
@@ -148,6 +153,22 @@ class Ball:
         surf = pg.Surface(self.rect.size)
         surf.fill(color)
         return surf
+
+    def update(self, rects: list[pg.Rect]) -> None:
+        hit = False
+        for collider in (r for r in rects if aabb.rectangles_overlap(self.rect, r)):
+            hit = True
+            dx, dy = aabb.get_displacement(self.rect, collider, self._vel_x, self._vel_y)
+            if dx != 0:
+                self.rect.x += dx
+                self._vel_x *= -1
+            else:
+                self.rect.y += dy
+                self._vel_y *= -1
+        if hit:
+            return
+        self.rect.x += self._vel_x
+        self.rect.y += self._vel_y
 
     def render(self, screen: pg.Surface) -> None:
         screen.blit(self._surf, self.rect)
@@ -183,6 +204,7 @@ class Game:
         self.paddle_right = paddle_right
         self.ball = ball
         self._action_buffers = [ActionBuffer() for _ in range(len(PLAYER_KEYBINDINGS))]
+        self._rects = [*arena.rects, paddle_left.rect, paddle_right.rect]
 
     def run(self) -> None:
         pg.init()
@@ -224,6 +246,7 @@ class Game:
     def update(self) -> None:
         self.paddle_left.update(self._action_buffers[0])
         self.paddle_right.update(self._action_buffers[1])
+        self.ball.update(self._rects)
 
     def render(self) -> None:
         self.screen.fill("black")
