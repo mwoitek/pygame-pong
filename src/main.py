@@ -1,6 +1,6 @@
 import random
 from enum import IntEnum
-from typing import Literal, cast
+from typing import Literal
 
 import pygame as pg
 
@@ -11,14 +11,6 @@ type Side = Literal["left", "right"]
 WINDOW_WIDTH = 800
 WINDOW_HEIGHT = 600
 WINDOW_TITLE = "Pong"
-BORDER_WIDTH = 10
-
-PADDLE_WIDTH = 8
-PADDLE_HEIGHT = 96
-PADDLE_VELOCITY = 6
-
-BALL_SIZE = 10
-BALL_VELOCITY = 6
 
 CYAN = pg.Color(91, 200, 175)
 DARK_BLUE = pg.Color(32, 32, 96)
@@ -108,9 +100,11 @@ class ActionBuffer:
 
 
 class Paddle:
+    VELOCITY = 6
+
     def __init__(self, /, *, side: Side, color: pg.typing.ColorLike = "white") -> None:
         self._init_pos = (12 if side == "left" else 780, 252)
-        self.rect = pg.Rect(self._init_pos, (PADDLE_WIDTH, PADDLE_HEIGHT))
+        self.rect = pg.Rect(self._init_pos, (8, 96))
         self._surf = self._get_surface(color)
 
     def _get_surface(self, color: pg.typing.ColorLike) -> pg.Surface:
@@ -120,10 +114,10 @@ class Paddle:
 
     def update(self, action_buffer: ActionBuffer) -> None:
         if action_buffer[Action.MOVE_DOWN]:
-            self.rect.y = min(self.rect.y + PADDLE_VELOCITY, 492)
+            self.rect.y = min(self.rect.y + Paddle.VELOCITY, 492)
             action_buffer[Action.MOVE_DOWN] = False
         if action_buffer[Action.MOVE_UP]:
-            self.rect.y = max(self.rect.y - PADDLE_VELOCITY, 12)
+            self.rect.y = max(self.rect.y - Paddle.VELOCITY, 12)
             action_buffer[Action.MOVE_UP] = False
 
     def render(self, screen: pg.Surface) -> None:
@@ -131,15 +125,16 @@ class Paddle:
 
 
 class Ball:
+    SIZE = 10
+    VELOCITY = 6
     OUT_EVENT = pg.event.custom_type()
     OUT_LEFT = pg.Event(OUT_EVENT, side="left")
     OUT_RIGHT = pg.Event(OUT_EVENT, side="right")
     UNFREEZE_EVENT = pg.event.custom_type()
 
     def __init__(self, /, *, color: pg.typing.ColorLike = "white") -> None:
-        self.rect = pg.Rect(0, 0, BALL_SIZE, BALL_SIZE)
-        side = cast("Side", random.choice(["left", "right"]))
-        self.reset(side)
+        self._rect = pg.Rect(0, 0, Ball.SIZE, Ball.SIZE)
+        self.reset(random.choice(["left", "right"]))
         self._surf = self._get_surface(color)
 
     def _set_random_position(self, side: Side) -> None:
@@ -148,15 +143,15 @@ class Ball:
         else:
             x_min, x_max = 401, 431
         y_min, y_max = 60, 541
-        self.rect.centerx = random.randrange(x_min, x_max)
-        self.rect.centery = random.randrange(y_min, y_max)
+        self._rect.centerx = random.randrange(x_min, x_max)
+        self._rect.centery = random.randrange(y_min, y_max)
 
     def _set_velocity(self, side: Side) -> None:
-        self._vx = BALL_VELOCITY
-        self._vy = BALL_VELOCITY
+        self._vx = Ball.VELOCITY
+        self._vy = Ball.VELOCITY
         if side == "right":
             self._vx *= -1
-        if self.rect.y > 295:
+        if self._rect.y > 295:
             self._vy *= -1
 
     def _freeze(self) -> None:
@@ -172,37 +167,37 @@ class Ball:
         self._freeze()
 
     def _get_surface(self, color: pg.typing.ColorLike) -> pg.Surface:
-        surf = pg.Surface(self.rect.size)
+        surf = pg.Surface(self._rect.size)
         surf.fill(color)
         return surf
 
     def _check_is_out(self) -> None:
-        if self.rect.x <= -10:
+        if self._rect.x <= -Ball.SIZE:
             pg.event.post(Ball.OUT_LEFT)
-        elif self.rect.x >= WINDOW_WIDTH:
+        elif self._rect.x >= WINDOW_WIDTH:
             pg.event.post(Ball.OUT_RIGHT)
 
     def update(self, rects: list[pg.Rect]) -> None:
         if self._frozen:
             return
         hit = False
-        for collider in (r for r in rects if aabb.rectangles_overlap(self.rect, r)):
+        for collider in (r for r in rects if aabb.rectangles_overlap(self._rect, r)):
             hit = True
-            dx, dy = aabb.get_displacement(self.rect, collider, self._vx, self._vy)
+            dx, dy = aabb.get_displacement(self._rect, collider, self._vx, self._vy)
             if dx != 0:
-                self.rect.x += dx
+                self._rect.x += dx
                 self._vx *= -1
             else:
-                self.rect.y += dy
+                self._rect.y += dy
                 self._vy *= -1
         if hit:
             return
-        self.rect.x += self._vx
-        self.rect.y += self._vy
+        self._rect.x += self._vx
+        self._rect.y += self._vy
         self._check_is_out()
 
     def render(self, screen: pg.Surface) -> None:
-        screen.blit(self._surf, self.rect)
+        screen.blit(self._surf, self._rect)
 
 
 PLAYER_KEYBINDINGS = [
