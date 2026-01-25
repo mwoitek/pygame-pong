@@ -131,13 +131,14 @@ class Paddle:
 
 
 class Ball:
+    OUT_EVENT = pg.event.custom_type()
+    OUT_LEFT = pg.Event(OUT_EVENT, side="left")
+    OUT_RIGHT = pg.Event(OUT_EVENT, side="right")
+
     def __init__(self, /, *, color: pg.typing.ColorLike = "white") -> None:
         self.rect = pg.Rect(0, 0, BALL_SIZE, BALL_SIZE)
         side = cast("Side", random.choice(["left", "right"]))
-        self._set_random_position(side)
-        # TODO: randomize
-        self._vel_x = BALL_VELOCITY
-        self._vel_y = BALL_VELOCITY
+        self.reset(side)
         self._surf = self._get_surface(color)
 
     def _set_random_position(self, side: Side) -> None:
@@ -149,26 +150,45 @@ class Ball:
         self.rect.centerx = random.randrange(x_min, x_max)
         self.rect.centery = random.randrange(y_min, y_max)
 
+    def _set_velocity(self, side: Side) -> None:
+        self._vx = BALL_VELOCITY
+        self._vy = BALL_VELOCITY
+        if side == "right":
+            self._vx *= -1
+        if self.rect.y > 295:
+            self._vy *= -1
+
+    def reset(self, side: Side) -> None:
+        self._set_random_position(side)
+        self._set_velocity(side)
+
     def _get_surface(self, color: pg.typing.ColorLike) -> pg.Surface:
         surf = pg.Surface(self.rect.size)
         surf.fill(color)
         return surf
 
+    def _check_is_out(self) -> None:
+        if self.rect.x <= -10:
+            pg.event.post(Ball.OUT_LEFT)
+        elif self.rect.x >= WINDOW_WIDTH:
+            pg.event.post(Ball.OUT_RIGHT)
+
     def update(self, rects: list[pg.Rect]) -> None:
         hit = False
         for collider in (r for r in rects if aabb.rectangles_overlap(self.rect, r)):
             hit = True
-            dx, dy = aabb.get_displacement(self.rect, collider, self._vel_x, self._vel_y)
+            dx, dy = aabb.get_displacement(self.rect, collider, self._vx, self._vy)
             if dx != 0:
                 self.rect.x += dx
-                self._vel_x *= -1
+                self._vx *= -1
             else:
                 self.rect.y += dy
-                self._vel_y *= -1
+                self._vy *= -1
         if hit:
             return
-        self.rect.x += self._vel_x
-        self.rect.y += self._vel_y
+        self.rect.x += self._vx
+        self.rect.y += self._vy
+        self._check_is_out()
 
     def render(self, screen: pg.Surface) -> None:
         screen.blit(self._surf, self.rect)
@@ -229,8 +249,10 @@ class Game:
             self.render()
         pg.quit()
 
-    def handle_event(self, event: pg.event.Event) -> None:
+    def handle_event(self, event: pg.Event) -> None:
         match event.type:
+            case Ball.OUT_EVENT:
+                self.ball.reset(event.side)
             case pg.QUIT:
                 self.is_running = False
             case _:
