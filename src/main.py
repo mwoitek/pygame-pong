@@ -134,6 +134,7 @@ class Ball:
     OUT_EVENT = pg.event.custom_type()
     OUT_LEFT = pg.Event(OUT_EVENT, side="left")
     OUT_RIGHT = pg.Event(OUT_EVENT, side="right")
+    UNFREEZE_EVENT = pg.event.custom_type()
 
     def __init__(self, /, *, color: pg.typing.ColorLike = "white") -> None:
         self.rect = pg.Rect(0, 0, BALL_SIZE, BALL_SIZE)
@@ -158,9 +159,17 @@ class Ball:
         if self.rect.y > 295:
             self._vy *= -1
 
+    def _freeze(self) -> None:
+        self._frozen = True
+        pg.time.set_timer(Ball.UNFREEZE_EVENT, 800, loops=1)
+
+    def unfreeze(self) -> None:
+        self._frozen = False
+
     def reset(self, side: Side) -> None:
         self._set_random_position(side)
         self._set_velocity(side)
+        self._freeze()
 
     def _get_surface(self, color: pg.typing.ColorLike) -> pg.Surface:
         surf = pg.Surface(self.rect.size)
@@ -174,6 +183,8 @@ class Ball:
             pg.event.post(Ball.OUT_RIGHT)
 
     def update(self, rects: list[pg.Rect]) -> None:
+        if self._frozen:
+            return
         hit = False
         for collider in (r for r in rects if aabb.rectangles_overlap(self.rect, r)):
             hit = True
@@ -227,7 +238,6 @@ class Game:
         self._rects = [*arena.rects, paddle_left.rect, paddle_right.rect]
 
     def run(self) -> None:
-        pg.init()
         self.screen = pg.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
         pg.display.set_caption(WINDOW_TITLE)
         time_acc = 0
@@ -247,12 +257,13 @@ class Game:
                     time_acc -= 1
                     time_err -= FPS
             self.render()
-        pg.quit()
 
     def handle_event(self, event: pg.Event) -> None:
         match event.type:
             case Ball.OUT_EVENT:
                 self.ball.reset(event.side)
+            case Ball.UNFREEZE_EVENT:
+                self.ball.unfreeze()
             case pg.QUIT:
                 self.is_running = False
             case _:
@@ -281,6 +292,7 @@ class Game:
 
 
 if __name__ == "__main__":
+    pg.init()
     game = Game(
         arena=Arena(color=DARK_BLUE),
         divider=Divider(color=DARK_BLUE),
@@ -289,3 +301,4 @@ if __name__ == "__main__":
         ball=Ball(),
     )
     game.run()
+    pg.quit()
