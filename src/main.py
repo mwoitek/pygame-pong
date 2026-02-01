@@ -12,13 +12,13 @@ WINDOW_WIDTH = 800
 WINDOW_HEIGHT = 600
 WINDOW_TITLE = "Pong"
 
+FPS = 60
+DT_FIXED = 1_000 // FPS
+DT_FIXED_ERR = 1_000 % FPS
+
 CYAN = pg.Color(91, 200, 175)
 DARK_BLUE = pg.Color(32, 32, 96)
 FUCHSIA = pg.Color(176, 48, 176)
-
-FPS = 60
-FIXED_DT_US = 1_000_000 // FPS
-FIXED_DT_REM = 1_000_000 % FPS
 
 random.seed(a=60693174)
 
@@ -200,6 +200,11 @@ class Ball:
         screen.blit(self._surf, self._rect)
 
 
+class Score:
+    # TODO
+    pass
+
+
 PLAYER_KEYBINDINGS = [
     {
         Action.MOVE_DOWN: pg.K_w,
@@ -223,13 +228,13 @@ class Game:
         paddle_right: Paddle,
         ball: Ball,
     ) -> None:
-        self.is_running = False
         self.arena = arena
         self.divider = divider
         self.paddle_left = paddle_left
         self.paddle_right = paddle_right
         self.ball = ball
         self._action_buffers = [ActionBuffer() for _ in range(len(PLAYER_KEYBINDINGS))]
+        self._is_running = False
         self._rects = [*arena.rects, paddle_left.rect, paddle_right.rect]
 
     def run(self) -> None:
@@ -238,16 +243,16 @@ class Game:
         time_acc = 0
         time_err = 0
         clock = pg.time.Clock()
-        self.is_running = True
-        while self.is_running:
+        self._is_running = True
+        while self._is_running:
             for event in pg.event.get():
                 self.handle_event(event)
             self.get_actions()
-            time_acc += clock.tick() * 1_000  # TODO: enforce max value
-            if time_acc >= FIXED_DT_US:
+            time_acc += clock.tick()  # TODO: enforce max value
+            if time_acc >= DT_FIXED:
                 self.update()
-                time_acc -= FIXED_DT_US
-                time_err += FIXED_DT_REM
+                time_acc -= DT_FIXED
+                time_err += DT_FIXED_ERR
                 if time_err >= FPS:
                     time_acc -= 1
                     time_err -= FPS
@@ -260,7 +265,7 @@ class Game:
             case Ball.UNFREEZE_EVENT:
                 self.ball.unfreeze()
             case pg.QUIT:
-                self.is_running = False
+                self._is_running = False
             case _:
                 pass
 
