@@ -244,8 +244,19 @@ class Score:
         offset_x = (WINDOW_WIDTH - self._surf.width) // 2
         return offset_x, Score.OFFSET_Y
 
+    def update(self, side: Side) -> None:
+        idx = int(side == "left")
+        self._scores[idx] += 1
+        self._surf.fill("black", self._rects[idx])
+        new_score = self._font.render(f"{self._scores[idx]:02}", True, self._color)
+        self._surf.blit(new_score, self._rects[idx])
+
     def render(self, screen: pg.Surface) -> None:
         screen.blit(self._surf, self._pos)
+
+    def reset(self) -> None:
+        self._scores = [0, 0]
+        self._surf = self._get_surface()
 
 
 PLAYER_KEYBINDINGS = [
@@ -306,6 +317,7 @@ class Game:
     def handle_event(self, event: pg.Event) -> None:
         match event.type:
             case Ball.OUT_EVENT:
+                self.score.update(event.side)
                 self.ball.reset(event.side)
             case Ball.UNFREEZE_EVENT:
                 self.ball.unfreeze()
