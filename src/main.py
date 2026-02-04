@@ -40,6 +40,7 @@ class Arena:
     HEIGHT = WINDOW_HEIGHT
     BORDER_X = 10
     BORDER_Y = 10
+    POSITION = (0, 0)
 
     def __init__(
         self,
@@ -52,7 +53,6 @@ class Arena:
         self._horizontal_rects = self._get_horizontal_rectangles()
         self.rects = self._vertical_rects + self._horizontal_rects
         self._surf = self._get_surface(color)
-        self._pos = (0, 0)
 
     def _get_vertical_rectangles(self, height: int) -> list[pg.Rect]:
         x = Arena.WIDTH - Arena.BORDER_X
@@ -84,24 +84,56 @@ class Arena:
         return surf
 
     def render(self, screen: pg.Surface) -> None:
-        screen.blit(self._surf, self._pos)
+        screen.blit(self._surf, Arena.POSITION)
 
 
 class Divider:
-    def __init__(self, /, *, color: pg.typing.ColorLike = "white") -> None:
-        self._surf = self._get_surface(color)
-        self._pos = (398, 10)
+    HEIGHT = Arena.HEIGHT - 2 * Arena.BORDER_Y
 
-    def _get_rectangles(self) -> list[pg.Rect]:
-        return [pg.Rect(0, i * 8, 4, 4) for i in range(73)]
+    def __init__(
+        self,
+        /,
+        *,
+        rect_height: int = 4,
+        rect_width: int | None = None,
+        color: pg.typing.ColorLike = "white",
+    ) -> None:
+        self._surf = self._get_surface(
+            rect_width if rect_width is not None else rect_height,
+            rect_height,
+            color,
+        )
+        self._pos = self._get_surface_position()
 
-    def _get_surface(self, color: pg.typing.ColorLike) -> pg.Surface:
-        square = pg.Surface((4, 4))
-        square.fill(color)
-        surf = pg.Surface((4, 580))
-        blit_sequence = [(square, rect) for rect in self._get_rectangles()]
+    def _get_rectangles(self, width: int, height: int) -> list[pg.Rect]:
+        max_rects = Divider.HEIGHT // height
+        num_rects = max_rects // 2 if max_rects % 2 == 0 else (max_rects + 1) // 2
+        gap_total = Divider.HEIGHT - num_rects * height
+        delta_y = height + gap_total // (num_rects - 1)
+        r = gap_total % (num_rects - 1)
+        rects = [pg.Rect(0, 0, width, height) for _ in range(num_rects)]
+        rects[1].y = delta_y + r // 2 if r % 2 == 0 else (r - 1) // 2
+        rects[-1].y = Divider.HEIGHT - height
+        for i in range(2, num_rects - 1):
+            rects[i].y = rects[i - 1].y + delta_y
+        return rects
+
+    def _get_surface(
+        self,
+        width: int,
+        height: int,
+        color: pg.typing.ColorLike,
+    ) -> pg.Surface:
+        surf = pg.Surface((width, Divider.HEIGHT))
+        rect_surf = get_colored_surface((width, height), color)
+        blit_sequence = [(rect_surf, rect) for rect in self._get_rectangles(width, height)]
         surf.blits(blit_sequence, doreturn=0)
         return surf
+
+    def _get_surface_position(self) -> tuple[int, int]:
+        x = Arena.POSITION[0] + (Arena.WIDTH - self._surf.width) // 2
+        y = Arena.POSITION[1] + Arena.BORDER_Y
+        return x, y
 
     def render(self, screen: pg.Surface) -> None:
         screen.blit(self._surf, self._pos)
