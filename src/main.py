@@ -29,44 +29,62 @@ ASSETS_DIR = ROOT_DIR / "assets"
 random.seed(a=60693174)
 
 
+def get_colored_surface(size: tuple[int, int], color: pg.typing.ColorLike) -> pg.Surface:
+    surf = pg.Surface(size)
+    surf.fill(color)
+    return surf
+
+
 class Arena:
-    def __init__(self, /, *, color: pg.typing.ColorLike = "white") -> None:
-        self._vertical_rects = self._get_vertical_rectangles()
+    WIDTH = WINDOW_WIDTH
+    HEIGHT = WINDOW_HEIGHT
+    BORDER_X = 10
+    BORDER_Y = 10
+
+    def __init__(
+        self,
+        /,
+        *,
+        rect_height: int = 100,
+        color: pg.typing.ColorLike = "white",
+    ) -> None:
+        self._vertical_rects = self._get_vertical_rectangles(rect_height)
         self._horizontal_rects = self._get_horizontal_rectangles()
         self.rects = self._vertical_rects + self._horizontal_rects
         self._surf = self._get_surface(color)
+        self._pos = (0, 0)
 
-    def _get_vertical_rectangles(self) -> list[pg.Rect]:
-        positions = [(0, 0), (0, 500), (790, 0), (790, 500)]
-        size = (10, 100)
+    def _get_vertical_rectangles(self, height: int) -> list[pg.Rect]:
+        x = Arena.WIDTH - Arena.BORDER_X
+        y = Arena.HEIGHT - height
+        positions = [
+            (0, 0),
+            (0, y),
+            (x, 0),
+            (x, y),
+        ]
+        size = (Arena.BORDER_X, height)
         return [pg.Rect(position, size) for position in positions]
 
     def _get_horizontal_rectangles(self) -> list[pg.Rect]:
-        positions = [(10, 0), (10, 590)]
-        size = (780, 10)
+        positions = [
+            (Arena.BORDER_X, 0),
+            (Arena.BORDER_X, Arena.HEIGHT - Arena.BORDER_Y),
+        ]
+        size = (Arena.WIDTH - 2 * Arena.BORDER_X, Arena.BORDER_Y)
         return [pg.Rect(position, size) for position in positions]
 
-    def _get_vertical_surface(self, color: pg.typing.ColorLike) -> pg.Surface:
-        surf = pg.Surface(self._vertical_rects[0].size)
-        surf.fill(color)
-        return surf
-
-    def _get_horizontal_surface(self, color: pg.typing.ColorLike) -> pg.Surface:
-        surf = pg.Surface(self._horizontal_rects[0].size)
-        surf.fill(color)
-        return surf
-
     def _get_surface(self, color: pg.typing.ColorLike) -> pg.Surface:
-        surf = pg.Surface((WINDOW_WIDTH, WINDOW_HEIGHT))
-        vertical_surf = self._get_vertical_surface(color)
-        horizontal_surf = self._get_horizontal_surface(color)
+        surf = pg.Surface((Arena.WIDTH, Arena.HEIGHT))
+        vertical_surf = get_colored_surface(self._vertical_rects[0].size, color)
+        horizontal_surf = get_colored_surface(self._horizontal_rects[0].size, color)
         blit_sequence = [(vertical_surf, rect) for rect in self._vertical_rects]
         blit_sequence += [(horizontal_surf, rect) for rect in self._horizontal_rects]
         surf.blits(blit_sequence, doreturn=0)
         return surf
 
     def render(self, screen: pg.Surface) -> None:
-        screen.blit(self._surf)
+        screen.blit(self._surf, self._pos)
 
 
 class Divider:
