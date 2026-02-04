@@ -42,13 +42,7 @@ class Arena:
     BORDER_Y = 10
     POSITION = (0, 0)
 
-    def __init__(
-        self,
-        /,
-        *,
-        rect_height: int = 100,
-        color: pg.typing.ColorLike = "white",
-    ) -> None:
+    def __init__(self, /, *, rect_height: int = 100, color: pg.typing.ColorLike = "white") -> None:
         self._vertical_rects = self._get_vertical_rectangles(rect_height)
         self._horizontal_rects = self._get_horizontal_rectangles()
         self.rects = self._vertical_rects + self._horizontal_rects
@@ -118,12 +112,7 @@ class Divider:
             rects[i].y = rects[i - 1].y + delta_y
         return rects
 
-    def _get_surface(
-        self,
-        width: int,
-        height: int,
-        color: pg.typing.ColorLike,
-    ) -> pg.Surface:
+    def _get_surface(self, width: int, height: int, color: pg.typing.ColorLike) -> pg.Surface:
         surf = pg.Surface((width, Divider.HEIGHT))
         rect_surf = get_colored_surface((width, height), color)
         blit_sequence = [(rect_surf, rect) for rect in self._get_rectangles(width, height)]
