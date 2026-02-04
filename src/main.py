@@ -320,10 +320,19 @@ class Game:
                     time_err -= FPS
             self.render()
 
+    def handle_keydown(self, key: int) -> None:
+        match key:
+            case pg.K_ESCAPE | pg.K_q:
+                self._is_running = False
+            case _:
+                pass
+
     def handle_event(self, event: pg.Event) -> None:
         match event.type:
             case pg.QUIT:
                 self._is_running = False
+            case pg.KEYDOWN:
+                self.handle_keydown(event.key)
             case Ball.OUT_EVENT:
                 self.score.update(event.side)
                 self.ball.reset(event.side)
