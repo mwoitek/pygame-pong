@@ -17,6 +17,8 @@ FPS = 60
 DT_FIXED = 1_000 // FPS
 DT_FIXED_ERR = 1_000 % FPS
 
+MAX_SCORE = 20
+
 CYAN = pg.Color(91, 200, 175)
 DARK_BLUE = pg.Color(32, 32, 96)
 FUCHSIA = pg.Color(176, 48, 176)
@@ -207,6 +209,7 @@ class Ball:
 class Score:
     SPACING_X = 8
     OFFSET_Y = 18
+    WIN_EVENT = pg.event.custom_type()
 
     def __init__(
         self,
@@ -247,6 +250,9 @@ class Score:
     def update(self, side: Side) -> None:
         idx = int(side == "left")
         self._scores[idx] += 1
+        if self._scores[idx] == MAX_SCORE:
+            event = pg.Event(Score.WIN_EVENT, player=idx + 1)
+            pg.event.post(event)
         self._surf.fill("black", self._rects[idx])
         new_score = self._font.render(f"{self._scores[idx]:02}", True, self._color)
         self._surf.blit(new_score, self._rects[idx])
@@ -316,13 +322,17 @@ class Game:
 
     def handle_event(self, event: pg.Event) -> None:
         match event.type:
+            case pg.QUIT:
+                self._is_running = False
             case Ball.OUT_EVENT:
                 self.score.update(event.side)
                 self.ball.reset(event.side)
             case Ball.UNFREEZE_EVENT:
                 self.ball.unfreeze()
-            case pg.QUIT:
-                self._is_running = False
+            case Score.WIN_EVENT:
+                print(f"Player {event.player} won!")  # just a placeholder
+                self.score.reset()
+                self.ball.reset("right" if event.player == 1 else "left")
             case _:
                 pass
 
