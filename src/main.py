@@ -35,6 +35,44 @@ def get_colored_surface(size: tuple[int, int], color: pg.typing.ColorLike) -> pg
     return surf
 
 
+class Hud:
+    WIDTH = WINDOW_WIDTH
+    PADDING_X = 8
+    PADDING_Y = 8
+    WIN_DIGITS = 5
+    SCORE_DIGITS = 3
+
+    def __init__(
+        self,
+        /,
+        *,
+        font_name: str = "PressStart2P-Regular",
+        font_size: int = 24,
+        color: pg.typing.ColorLike = "white",
+    ) -> None:
+        self._font = pg.Font(ASSETS_DIR / f"{font_name}.ttf", font_size)
+        self._font_size = font_size
+        self._color = color
+        self.height = font_size + 2 * Hud.PADDING_Y
+        self._wins = [0, 0]
+        self._scores = [0, 0]
+        self._rects = self._get_rectangles()
+
+    def _get_rectangles(self) -> list[pg.Rect]:
+        win_width = (Hud.WIN_DIGITS + 3) * self._font_size
+        score_width = (Hud.SCORE_DIGITS + 3) * self._font_size
+        x1 = Hud.PADDING_X
+        x2 = x1 + win_width + self._font_size
+        x4 = Hud.WIDTH - score_width - Hud.PADDING_X
+        x3 = x4 - win_width - self._font_size
+        return [
+            pg.Rect(x1, Hud.PADDING_Y, win_width, self._font_size),
+            pg.Rect(x2, Hud.PADDING_Y, score_width, self._font_size),
+            pg.Rect(x3, Hud.PADDING_Y, win_width, self._font_size),
+            pg.Rect(x4, Hud.PADDING_Y, score_width, self._font_size),
+        ]
+
+
 class Arena:
     WIDTH = WINDOW_WIDTH
     HEIGHT = WINDOW_HEIGHT
