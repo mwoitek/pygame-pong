@@ -324,65 +324,6 @@ class Ball:
         screen.blit(self._surf, self._rect)
 
 
-class Score:
-    SPACING_X = 8
-    OFFSET_Y = 18
-    WIN_EVENT = pg.event.custom_type()
-
-    def __init__(
-        self,
-        /,
-        *,
-        font_name: str = "PressStart2P-Regular",
-        font_size: int = 24,
-        color: pg.typing.ColorLike = "white",
-    ) -> None:
-        self._font = pg.Font(ASSETS_DIR / f"{font_name}.ttf", font_size)
-        self._font_size = font_size
-        self._color = color
-        self._scores = [0, 0]
-        self._rects = self._get_rectangles()
-        self._surf = self._get_surface()
-        self._pos = self._get_surface_position()
-
-    def _get_rectangles(self) -> list[pg.Rect]:
-        width = 2 * self._font_size
-        size = (width, self._font_size)
-        return [
-            pg.Rect((0, 0), size),
-            pg.Rect((width + 2 * Score.SPACING_X, 0), size),
-        ]
-
-    def _get_surface(self) -> pg.Surface:
-        width = 2 * (Score.SPACING_X + 2 * self._font_size)
-        surf = pg.Surface((width, self._font_size))
-        surfs = [self._font.render(f"{score:02}", True, self._color) for score in self._scores]
-        blit_sequence = list(zip(surfs, self._rects, strict=True))
-        surf.blits(blit_sequence, doreturn=0)
-        return surf
-
-    def _get_surface_position(self) -> tuple[int, int]:
-        offset_x = (WINDOW_WIDTH - self._surf.width) // 2
-        return offset_x, Score.OFFSET_Y
-
-    def update(self, side: Side) -> None:
-        idx = int(side == "left")
-        self._scores[idx] += 1
-        if self._scores[idx] == MAX_SCORE:
-            event = pg.Event(Score.WIN_EVENT, player=idx + 1)
-            pg.event.post(event)
-        self._surf.fill("black", self._rects[idx])
-        new_score = self._font.render(f"{self._scores[idx]:02}", True, self._color)
-        self._surf.blit(new_score, self._rects[idx])
-
-    def render(self, screen: pg.Surface) -> None:
-        screen.blit(self._surf, self._pos)
-
-    def reset(self) -> None:
-        self._scores = [0, 0]
-        self._surf = self._get_surface()
-
-
 PLAYER_KEYBINDINGS = [
     {
         Action.MOVE_DOWN: pg.K_w,
@@ -405,14 +346,14 @@ class Game:
         paddle_left: Paddle,
         paddle_right: Paddle,
         ball: Ball,
-        score: Score,
+        # score: Score,
     ) -> None:
         self.arena = arena
         self.divider = divider
         self.paddle_left = paddle_left
         self.paddle_right = paddle_right
         self.ball = ball
-        self.score = score
+        # self.score = score
         self._action_buffers = [ActionBuffer() for _ in range(len(PLAYER_KEYBINDINGS))]
         self._is_running = False
         self._rects = [*arena.rects, paddle_left.rect, paddle_right.rect]
@@ -452,14 +393,14 @@ class Game:
             case pg.KEYDOWN:
                 self.handle_keydown(event.key)
             case Ball.OUT_EVENT:
-                self.score.update(event.side)
+                # self.score.update(event.side)
                 self.ball.reset(event.side)
             case Ball.UNFREEZE_EVENT:
                 self.ball.unfreeze()
-            case Score.WIN_EVENT:
-                print(f"Player {event.player} won!")  # just a placeholder
-                self.score.reset()
-                self.ball.reset("right" if event.player == 1 else "left")
+            # case Score.WIN_EVENT:
+            #     print(f"Player {event.player} won!")  # just a placeholder
+            #     self.score.reset()
+            #     self.ball.reset("right" if event.player == 1 else "left")
             case _:
                 pass
 
@@ -478,7 +419,7 @@ class Game:
     def render(self) -> None:
         self.screen.fill("black")
         self.arena.render(self.screen)
-        self.score.render(self.screen)
+        # self.score.render(self.screen)
         self.divider.render(self.screen)
         self.paddle_left.render(self.screen)
         self.paddle_right.render(self.screen)
@@ -494,7 +435,7 @@ if __name__ == "__main__":
         paddle_left=Paddle(side="left", color=CYAN),
         paddle_right=Paddle(side="right", color=FUCHSIA),
         ball=Ball(),
-        score=Score(color="gray"),
+        # score=Score(color="gray"),
     )
     game.run()
     pg.quit()
