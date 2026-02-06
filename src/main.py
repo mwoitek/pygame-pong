@@ -123,12 +123,20 @@ class Hud:
 
 class Arena:
     WIDTH = WINDOW_WIDTH
-    HEIGHT = WINDOW_HEIGHT
     BORDER_X = 10
     BORDER_Y = 10
-    POSITION = (0, 0)
 
-    def __init__(self, /, *, rect_height: int = 100, color: pg.typing.ColorLike = "white") -> None:
+    def __init__(
+        self,
+        /,
+        *,
+        height: int,
+        y: int,
+        rect_height: int = 100,
+        color: pg.typing.ColorLike = "white",
+    ) -> None:
+        self.height = height
+        self.pos = (0, y)
         self._vertical_rects = self._get_vertical_rectangles(rect_height)
         self._horizontal_rects = self._get_horizontal_rectangles()
         self.rects = self._vertical_rects + self._horizontal_rects
@@ -136,7 +144,7 @@ class Arena:
 
     def _get_vertical_rectangles(self, height: int) -> list[pg.Rect]:
         x = Arena.WIDTH - Arena.BORDER_X
-        y = Arena.HEIGHT - height
+        y = self.height - height
         positions = [
             (0, 0),
             (0, y),
@@ -149,13 +157,13 @@ class Arena:
     def _get_horizontal_rectangles(self) -> list[pg.Rect]:
         positions = [
             (Arena.BORDER_X, 0),
-            (Arena.BORDER_X, Arena.HEIGHT - Arena.BORDER_Y),
+            (Arena.BORDER_X, self.height - Arena.BORDER_Y),
         ]
         size = (Arena.WIDTH - 2 * Arena.BORDER_X, Arena.BORDER_Y)
         return [pg.Rect(position, size) for position in positions]
 
     def _get_surface(self, color: pg.typing.ColorLike) -> pg.Surface:
-        surf = pg.Surface((Arena.WIDTH, Arena.HEIGHT))
+        surf = pg.Surface((Arena.WIDTH, self.height))
         vertical_surf = get_colored_surface(self._vertical_rects[0].size, color)
         horizontal_surf = get_colored_surface(self._horizontal_rects[0].size, color)
         blit_sequence = [(vertical_surf, rect) for rect in self._vertical_rects]
@@ -164,50 +172,57 @@ class Arena:
         return surf
 
     def render(self, screen: pg.Surface) -> None:
-        screen.blit(self._surf, Arena.POSITION)
+        screen.blit(self._surf, self.pos)
 
 
 class Divider:
-    HEIGHT = Arena.HEIGHT - 2 * Arena.BORDER_Y
-
     def __init__(
         self,
         /,
         *,
+        height: int,
+        y: int,
         rect_height: int = 4,
         rect_width: int | None = None,
         color: pg.typing.ColorLike = "white",
     ) -> None:
         self._surf = self._get_surface(
+            height,
             rect_width if rect_width is not None else rect_height,
             rect_height,
             color,
         )
-        self._pos = self._get_surface_position()
+        self._pos = self._get_surface_position(y)
 
-    def _get_rectangles(self, width: int, height: int) -> list[pg.Rect]:
-        max_rects = Divider.HEIGHT // height
+    def _get_rectangles(self, height: int, rect_width: int, rect_height: int) -> list[pg.Rect]:
+        max_rects = height // rect_height
         num_rects = max_rects // 2 if max_rects % 2 == 0 else (max_rects + 1) // 2
-        gap_total = Divider.HEIGHT - num_rects * height
-        delta_y = height + gap_total // (num_rects - 1)
+        gap_total = height - num_rects * rect_height
+        delta_y = rect_height + gap_total // (num_rects - 1)
         r = gap_total % (num_rects - 1)
-        rects = [pg.Rect(0, 0, width, height) for _ in range(num_rects)]
+        rects = [pg.Rect(0, 0, rect_width, rect_height) for _ in range(num_rects)]
         rects[1].y = delta_y + r // 2 if r % 2 == 0 else (r - 1) // 2
-        rects[-1].y = Divider.HEIGHT - height
+        rects[-1].y = height - rect_height
         for i in range(2, num_rects - 1):
             rects[i].y = rects[i - 1].y + delta_y
         return rects
 
-    def _get_surface(self, width: int, height: int, color: pg.typing.ColorLike) -> pg.Surface:
-        surf = pg.Surface((width, Divider.HEIGHT))
-        rect_surf = get_colored_surface((width, height), color)
-        blit_sequence = [(rect_surf, rect) for rect in self._get_rectangles(width, height)]
+    def _get_surface(
+        self,
+        height: int,
+        rect_width: int,
+        rect_height: int,
+        color: pg.typing.ColorLike,
+    ) -> pg.Surface:
+        surf = pg.Surface((rect_width, height))
+        rect_surf = get_colored_surface((rect_width, rect_height), color)
+        rects = self._get_rectangles(height, rect_width, rect_height)
+        blit_sequence = [(rect_surf, rect) for rect in rects]
         surf.blits(blit_sequence, doreturn=0)
         return surf
 
-    def _get_surface_position(self) -> tuple[int, int]:
-        x = Arena.POSITION[0] + (Arena.WIDTH - self._surf.width) // 2
-        y = Arena.POSITION[1] + Arena.BORDER_Y
+    def _get_surface_position(self, y: int) -> tuple[int, int]:
+        x = (Arena.WIDTH - self._surf.width) // 2
         return x, y
 
     def render(self, screen: pg.Surface) -> None:
@@ -344,26 +359,24 @@ PLAYER_KEYBINDINGS = [
 
 
 class Game:
-    def __init__(
-        self,
-        /,
-        *,
-        arena: Arena,
-        divider: Divider,
-        paddle_left: Paddle,
-        paddle_right: Paddle,
-        ball: Ball,
-        hud: Hud,
-    ) -> None:
-        self.arena = arena
-        self.divider = divider
-        self.paddle_left = paddle_left
-        self.paddle_right = paddle_right
-        self.ball = ball
-        self.hud = hud
+    def __init__(self) -> None:
+        self.hud = Hud()
+        self.arena = Arena(
+            height=WINDOW_HEIGHT - self.hud.height,
+            y=self.hud.height,
+            color=DARK_BLUE,
+        )
+        self.divider = Divider(
+            height=self.arena.height - 2 * Arena.BORDER_Y,
+            y=self.arena.pos[1] + Arena.BORDER_Y,
+            color=DARK_BLUE,
+        )
+        self.paddle_left = Paddle(side="left", color=CYAN)
+        self.paddle_right = Paddle(side="right", color=FUCHSIA)
+        self.ball = Ball()
         self._action_buffers = [ActionBuffer() for _ in range(len(PLAYER_KEYBINDINGS))]
         self._is_running = False
-        self._rects = [*arena.rects, paddle_left.rect, paddle_right.rect]
+        self._rects = [*self.arena.rects, self.paddle_left.rect, self.paddle_right.rect]
 
     def run(self) -> None:
         self.screen = pg.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
@@ -438,13 +451,6 @@ class Game:
 
 if __name__ == "__main__":
     pg.init()
-    game = Game(
-        arena=Arena(color=DARK_BLUE),
-        divider=Divider(color=DARK_BLUE),
-        paddle_left=Paddle(side="left", color=CYAN),
-        paddle_right=Paddle(side="right", color=FUCHSIA),
-        ball=Ball(),
-        hud=Hud(),
-    )
+    game = Game()
     game.run()
     pg.quit()
