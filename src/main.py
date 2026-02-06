@@ -88,6 +88,9 @@ class Hud:
         surf.blits(blit_sequence, doreturn=0)
         return surf
 
+    def render(self, screen: pg.Surface) -> None:
+        screen.blit(self._surf)
+
     def update_wins(self, player: int, value: int | None = None) -> None:
         i = player - 1
         if value is None:
@@ -112,6 +115,10 @@ class Hud:
         if self._scores[i] >= MAX_SCORE:
             event = pg.Event(Hud.WIN_EVENT, player=player)
             pg.event.post(event)
+
+    def reset_score(self) -> None:
+        self.update_score(1, 0)
+        self.update_score(2, 0)
 
 
 class Arena:
@@ -346,14 +353,14 @@ class Game:
         paddle_left: Paddle,
         paddle_right: Paddle,
         ball: Ball,
-        # score: Score,
+        hud: Hud,
     ) -> None:
         self.arena = arena
         self.divider = divider
         self.paddle_left = paddle_left
         self.paddle_right = paddle_right
         self.ball = ball
-        # self.score = score
+        self.hud = hud
         self._action_buffers = [ActionBuffer() for _ in range(len(PLAYER_KEYBINDINGS))]
         self._is_running = False
         self._rects = [*arena.rects, paddle_left.rect, paddle_right.rect]
@@ -393,14 +400,16 @@ class Game:
             case pg.KEYDOWN:
                 self.handle_keydown(event.key)
             case Ball.OUT_EVENT:
-                # self.score.update(event.side)
+                player = 2 if event.side == "left" else 1
+                self.hud.update_score(player)
                 self.ball.reset(event.side)
             case Ball.UNFREEZE_EVENT:
                 self.ball.unfreeze()
-            # case Score.WIN_EVENT:
-            #     print(f"Player {event.player} won!")  # just a placeholder
-            #     self.score.reset()
-            #     self.ball.reset("right" if event.player == 1 else "left")
+            case Hud.WIN_EVENT:
+                self.hud.update_wins(event.player)
+                self.hud.reset_score()
+                side = "right" if event.player == 1 else "left"
+                self.ball.reset(side)
             case _:
                 pass
 
@@ -419,7 +428,7 @@ class Game:
     def render(self) -> None:
         self.screen.fill("black")
         self.arena.render(self.screen)
-        # self.score.render(self.screen)
+        self.hud.render(self.screen)
         self.divider.render(self.screen)
         self.paddle_left.render(self.screen)
         self.paddle_right.render(self.screen)
@@ -435,7 +444,7 @@ if __name__ == "__main__":
         paddle_left=Paddle(side="left", color=CYAN),
         paddle_right=Paddle(side="right", color=FUCHSIA),
         ball=Ball(),
-        # score=Score(color="gray"),
+        hud=Hud(),
     )
     game.run()
     pg.quit()
