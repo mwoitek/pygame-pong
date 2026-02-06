@@ -48,15 +48,18 @@ class Hud:
         *,
         font_name: str = "PressStart2P-Regular",
         font_size: int = 24,
-        color: pg.typing.ColorLike = "white",
+        background_color: pg.typing.ColorLike = "black",
+        foreground_color: pg.typing.ColorLike = "white",
     ) -> None:
         self._font = pg.Font(ASSETS_DIR / f"{font_name}.ttf", font_size)
         self._font_size = font_size
-        self._color = color
+        self._background_color = background_color
+        self._foreground_color = foreground_color
         self.height = font_size + 2 * Hud.PADDING_Y
         self._wins = [0, 0]
         self._scores = [0, 0]
         self._rects = self._get_rectangles()
+        self._surf = self._get_surface()
 
     def _get_rectangles(self) -> list[pg.Rect]:
         win_width = (Hud.WIN_DIGITS + 3) * self._font_size
@@ -71,6 +74,26 @@ class Hud:
             pg.Rect(x3, Hud.PADDING_Y, win_width, self._font_size),
             pg.Rect(x4, Hud.PADDING_Y, score_width, self._font_size),
         ]
+
+    def _get_surface(self) -> pg.Surface:
+        surf = get_colored_surface((Hud.WIDTH, self.height), self._background_color)
+        text_surfs = [
+            self._font.render(f"W: {self._wins[0]}", True, self._foreground_color),
+            self._font.render(f"S: {self._scores[0]}", True, self._foreground_color),
+            self._font.render(f"W: {self._wins[1]}", True, self._foreground_color),
+            self._font.render(f"S: {self._scores[1]}", True, self._foreground_color),
+        ]
+        blit_sequence = list(zip(text_surfs, self._rects, strict=True))
+        surf.blits(blit_sequence, doreturn=0)
+        return surf
+
+    def update_wins(self, player: int, value: int | None = None) -> None:
+        # TODO
+        return
+
+    def update_score(self, player: int, value: int | None = None) -> None:
+        # TODO
+        return
 
 
 class Arena:
