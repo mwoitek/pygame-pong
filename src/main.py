@@ -41,6 +41,7 @@ class Hud:
     PADDING_Y = 8
     WIN_DIGITS = 5
     SCORE_DIGITS = 3
+    WIN_EVENT = pg.event.custom_type()
 
     def __init__(
         self,
@@ -88,12 +89,29 @@ class Hud:
         return surf
 
     def update_wins(self, player: int, value: int | None = None) -> None:
-        # TODO
-        return
+        i = player - 1
+        if value is None:
+            self._wins[i] += 1
+        else:
+            self._wins[i] = value
+        j = 2 * i
+        self._surf.fill(self._background_color, self._rects[j])
+        new_text = self._font.render(f"W: {self._wins[i]}", True, self._foreground_color)
+        self._surf.blit(new_text, self._rects[j])
 
     def update_score(self, player: int, value: int | None = None) -> None:
-        # TODO
-        return
+        i = player - 1
+        if value is None:
+            self._scores[i] += 1
+        else:
+            self._scores[i] = value
+        j = 2 * i + 1
+        self._surf.fill(self._background_color, self._rects[j])
+        new_text = self._font.render(f"S: {self._scores[i]}", True, self._foreground_color)
+        self._surf.blit(new_text, self._rects[j])
+        if self._scores[i] >= MAX_SCORE:
+            event = pg.Event(Hud.WIN_EVENT, player=player)
+            pg.event.post(event)
 
 
 class Arena:
