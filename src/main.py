@@ -262,19 +262,43 @@ class ActionBuffer:
 
 
 class Paddle:
-    VELOCITY = 6
+    OFFSET_X = 2
+    OFFSET_Y = 2
 
-    def __init__(self, /, *, side: Side, color: pg.typing.ColorLike = "white") -> None:
-        self._init_pos = (12 if side == "left" else 780, 252)
-        self.rect = pg.Rect(self._init_pos, (8, 96))
+    def __init__(
+        self,
+        /,
+        *,
+        width: int = 8,
+        height: int = 96,
+        velocity: int = 6,
+        color: pg.typing.ColorLike = "white",
+    ) -> None:
+        self.rect = pg.Rect(0, 0, width, height)
+        self._velocity = velocity
         self._surf = get_colored_surface(self.rect.size, color)
+
+    def set_position(self, side: Side, arena: Arena) -> "Paddle":
+        if side == "left":
+            x = Arena.BORDER_X + Paddle.OFFSET_X
+        else:
+            x = Arena.WIDTH - Arena.BORDER_X - Paddle.OFFSET_X - self.rect.width
+        y = (arena.height - self.rect.height) // 2
+        x += arena.pos[0]
+        y += arena.pos[1]
+        self.rect.move_ip(x, y)
+        self._init_pos = self.rect.topleft
+        return self
+
+    def reset(self) -> None:
+        self.rect = self.rect.move_to(topleft=self._init_pos)
 
     def update(self, action_buffer: ActionBuffer) -> None:
         if action_buffer[Action.MOVE_DOWN]:
-            self.rect.y = min(self.rect.y + Paddle.VELOCITY, 492)
+            self.rect.y = min(self.rect.y + self._velocity, 492)
             action_buffer.clear(Action.MOVE_DOWN)
         if action_buffer[Action.MOVE_UP]:
-            self.rect.y = max(self.rect.y - Paddle.VELOCITY, 12)
+            self.rect.y = max(self.rect.y - self._velocity, 12)
             action_buffer.clear(Action.MOVE_UP)
 
     def render(self, screen: pg.Surface) -> None:
@@ -382,8 +406,8 @@ class Game:
             y=self.arena.pos[1] + Arena.BORDER_Y,
             color=DARK_BLUE,
         )
-        self.paddle_left = Paddle(side="left", color=CYAN)
-        self.paddle_right = Paddle(side="right", color=FUCHSIA)
+        self.paddle_left = Paddle(color=CYAN).set_position("left", self.arena)
+        self.paddle_right = Paddle(color=FUCHSIA).set_position("right", self.arena)
         self.ball = Ball()
         self._action_buffers = [ActionBuffer() for _ in range(len(PLAYER_KEYBINDINGS))]
         self._is_running = False
