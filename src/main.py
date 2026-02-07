@@ -263,14 +263,14 @@ class ActionBuffer:
 
 class Paddle:
     OFFSET_X = 2
-    OFFSET_Y = 2
+    OFFSET_Y = 3
 
     def __init__(
         self,
         /,
         *,
-        width: int = 8,
-        height: int = 96,
+        width: int = 9,
+        height: int = 90,
         velocity: int = 6,
         color: pg.typing.ColorLike = "white",
     ) -> None:
