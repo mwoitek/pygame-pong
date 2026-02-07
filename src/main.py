@@ -253,6 +253,13 @@ class ActionBuffer:
     def __setitem__(self, action: Action, value: bool) -> None:
         self.values[action.value] = value
 
+    def clear(self, action: Action | None = None) -> None:
+        if action is not None:
+            self[action] = False
+            return
+        for i in range(len(self.values)):
+            self.values[i] = False
+
 
 class Paddle:
     VELOCITY = 6
@@ -260,20 +267,15 @@ class Paddle:
     def __init__(self, /, *, side: Side, color: pg.typing.ColorLike = "white") -> None:
         self._init_pos = (12 if side == "left" else 780, 252)
         self.rect = pg.Rect(self._init_pos, (8, 96))
-        self._surf = self._get_surface(color)
-
-    def _get_surface(self, color: pg.typing.ColorLike) -> pg.Surface:
-        surf = pg.Surface(self.rect.size)
-        surf.fill(color)
-        return surf
+        self._surf = get_colored_surface(self.rect.size, color)
 
     def update(self, action_buffer: ActionBuffer) -> None:
         if action_buffer[Action.MOVE_DOWN]:
             self.rect.y = min(self.rect.y + Paddle.VELOCITY, 492)
-            action_buffer[Action.MOVE_DOWN] = False
+            action_buffer.clear(Action.MOVE_DOWN)
         if action_buffer[Action.MOVE_UP]:
             self.rect.y = max(self.rect.y - Paddle.VELOCITY, 12)
-            action_buffer[Action.MOVE_UP] = False
+            action_buffer.clear(Action.MOVE_UP)
 
     def render(self, screen: pg.Surface) -> None:
         screen.blit(self._surf, self.rect)
