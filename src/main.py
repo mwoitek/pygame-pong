@@ -139,8 +139,10 @@ class Arena:
         self.pos = (0, y)
         self._vertical_rects = self._get_vertical_rectangles(rect_height)
         self._horizontal_rects = self._get_horizontal_rectangles()
-        self.rects = self._vertical_rects + self._horizontal_rects
         self._surf = self._get_surface(color)
+        self.rects = self._get_collision_rectangles()
+        del self._vertical_rects
+        del self._horizontal_rects
 
     def _get_vertical_rectangles(self, height: int) -> list[pg.Rect]:
         x = Arena.WIDTH - Arena.BORDER_X
@@ -170,6 +172,13 @@ class Arena:
         blit_sequence += [(horizontal_surf, rect) for rect in self._horizontal_rects]
         surf.blits(blit_sequence, doreturn=0)
         return surf
+
+    def _get_collision_rectangles(self) -> list[pg.Rect]:
+        rects = self._vertical_rects + self._horizontal_rects
+        x, y = self.pos
+        for rect in rects:
+            rect.move_ip(x, y)
+        return rects
 
     def render(self, screen: pg.Surface) -> None:
         screen.blit(self._surf, self.pos)
@@ -440,8 +449,8 @@ class Game:
 
     def render(self) -> None:
         self.screen.fill("black")
-        self.arena.render(self.screen)
         self.hud.render(self.screen)
+        self.arena.render(self.screen)
         self.divider.render(self.screen)
         self.paddle_left.render(self.screen)
         self.paddle_right.render(self.screen)
